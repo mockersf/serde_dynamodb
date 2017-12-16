@@ -6,10 +6,10 @@ use rusoto_dynamodb::AttributeValue;
 use error::{Error, Result};
 
 
-pub trait Read {
+trait Read {
     fn get_attribute_value(&self, keypath: &[&'static str]) -> Option<&AttributeValue>;
 }
-pub struct HashMapRead {
+struct HashMapRead {
     hashmap: HashMap<String, AttributeValue>,
 }
 impl HashMapRead {
@@ -24,7 +24,7 @@ impl Read for HashMapRead {
 }
 
 
-pub struct Deserializer<R> {
+struct Deserializer<R> {
     read: R,
     current_field: Vec<&'static str>,
 }
@@ -330,8 +330,6 @@ impl<'de, 'a, R: Read + 'a> serde::de::MapAccess<'de> for MapAccess<'a, R> {
         seed.deserialize(&mut *self.de)
     }
 }
-
-
 
 fn from_trait<'de, R, T>(read: R) -> Result<T>
 where
