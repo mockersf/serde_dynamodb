@@ -11,7 +11,7 @@ before_script:
   - export PATH="$PATH:$HOME/.cargo/bin"
   - which rustfmt || cargo install rustfmt
 script:
-  - cargo fmt -- --write-mode=diff
+  - cargo fmt -- --write-mode=diff --force
   - cargo build
   - cargo test
 
