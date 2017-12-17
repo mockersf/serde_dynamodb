@@ -187,7 +187,7 @@ where
     }
 
     fn serialize_unit(self) -> Result<()> {
-        unimplemented!()
+        Ok(())
     }
 
     fn serialize_unit_struct(self, _name: &'static str) -> Result<()> {
@@ -226,14 +226,14 @@ where
     }
 
     fn serialize_none(self) -> Result<()> {
-        unimplemented!()
+        self.serialize_unit()
     }
 
-    fn serialize_some<T: ?Sized>(self, _value: &T) -> Result<()>
+    fn serialize_some<T: ?Sized>(self, value: &T) -> Result<()>
     where
         T: serde::ser::Serialize,
     {
-        unimplemented!()
+        value.serialize(self)
     }
 
     fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq> {
