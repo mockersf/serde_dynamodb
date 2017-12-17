@@ -1,4 +1,4 @@
-#  serde_dynamodb [![Build Status](https://travis-ci.org/mockersf/serde_dynamodb.svg?branch=master)](https://travis-ci.org/mockersf/serde_dynamodb)
+#  serde_dynamodb [![Build Status](https://travis-ci.org/mockersf/serde_dynamodb.svg?branch=master)](https://travis-ci.org/mockersf/serde_dynamodb) [![Coverage Status](https://coveralls.io/repos/github/mockersf/serde_dynamodb/badge.svg?branch=master)](https://coveralls.io/github/mockersf/serde_dynamodb?branch=master)
 
 Library to de/serialize an object to an `HashMap` of `AttributeValue`s used by [rusoto_dynamodb](https://crates.io/crates/rusoto_dynamodb) to manipulate objects saved in dynamodb
 
