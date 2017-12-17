@@ -25,7 +25,7 @@ cache: cargo
 before_script:
   - export PATH="$PATH:$HOME/.cargo/bin"
   - which rustfmt || cargo install rustfmt
-  - cargo install cargo-travis
+  - cargo install --force cargo-travis
 
 script:
   - cargo fmt -- --write-mode=diff --force
