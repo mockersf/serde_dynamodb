@@ -1,11 +1,6 @@
-[package]
-name = "serde_dynamodb"
-version = "0.0.2"
-authors = ["François Mockers <mockersf@gmail.com>"]
+[workspace]
+members = [
+    "serde_dynamodb",
+    "serde_dynamodb_derive",
+]
 
-[dependencies]
-serde = "*"
-rusoto_dynamodb = "*"
-
-[dev-dependencies]
-serde_derive = "*"
