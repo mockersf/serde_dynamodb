@@ -37,7 +37,7 @@ fn main() {
         item: serde_dynamodb::to_hashmap(&task).unwrap(),
         ..Default::default()
     };
-    
+
 
     let task_query_input = TaskQueryInput {
         id: Some("Entry Id".to_string()),
