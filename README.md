@@ -4,7 +4,7 @@ Library to de/serialize an object to an `HashMap` of `AttributeValue`s used by [
 
 ## Example
 
-```
+```rust
 #[derive(Serialize, Deserialize)]
 struct Todo {
     id: uuid::Uuid,
