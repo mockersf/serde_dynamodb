@@ -23,6 +23,13 @@ fn cant_serialize_non_struct() {
     assert!(serde_dynamodb::to_hashmap(&number).is_err());
     let number : f64 = 5.2;
     assert!(serde_dynamodb::to_hashmap(&number).is_err());
+
+/*
+    let none : Option<f64> = None;
+    assert!(serde_dynamodb::to_hashmap(&none).is_err());
+*/
+    let some : Option<f64> = Some(13.54);
+    assert!(serde_dynamodb::to_hashmap(&some).is_err());
 }
 
 #[test]
@@ -90,6 +97,7 @@ fn can_go_back_and_forth() {
         b: u8,
         u: u32,
         intern: Internal,
+        list: Vec<i32>,
     }
     let value = Basic {
         i: 18,
@@ -99,6 +107,7 @@ fn can_go_back_and_forth() {
         b: 13,
         u: 312,
         intern: Internal { k: 512, f:13.54, },
+        list: vec!(0, 2, 5),
     };
     let hm = serde_dynamodb::to_hashmap(&value).unwrap();
     let out = serde_dynamodb::from_hashmap::<Basic>(hm).unwrap();

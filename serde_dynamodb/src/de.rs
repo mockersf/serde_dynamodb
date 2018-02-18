@@ -6,7 +6,7 @@ use rusoto_dynamodb::AttributeValue;
 use error::{Error, Result};
 
 trait Read {
-    fn get_attribute_value(&self, keypath: &[&'static str]) -> Option<&AttributeValue>;
+    fn get_attribute_value(&self, keypath: &[String]) -> Option<&AttributeValue>;
 }
 struct HashMapRead {
     hashmap: HashMap<String, AttributeValue>,
@@ -17,14 +17,14 @@ impl HashMapRead {
     }
 }
 impl Read for HashMapRead {
-    fn get_attribute_value(&self, keypath: &[&'static str]) -> Option<&AttributeValue> {
+    fn get_attribute_value(&self, keypath: &[String]) -> Option<&AttributeValue> {
         self.hashmap.get(&keypath.join("-"))
     }
 }
 
 struct Deserializer<R> {
     read: R,
-    current_field: Vec<&'static str>,
+    current_field: Vec<String>,
 }
 impl<'de, R> Deserializer<R>
 where
@@ -37,6 +37,7 @@ where
         }
     }
 }
+
 impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> {
     type Error = Error;
 
@@ -295,11 +296,11 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         visitor.visit_newtype_struct(self)
     }
 
-    fn deserialize_seq<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        visitor.visit_seq(SeqAccess::new(self))
     }
 
     fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value>
@@ -367,6 +368,40 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
     }
 }
 
+struct SeqAccess<'a, R: 'a> {
+    de: &'a mut Deserializer<R>,
+    current: usize,
+}
+
+impl<'a, R: 'a> SeqAccess<'a, R> {
+    fn new(de: &'a mut Deserializer<R>) -> Self {
+        SeqAccess {
+            de: de,
+            current: 0,
+        }
+    }
+}
+
+impl<'de, 'a, R: Read + 'a> serde::de::SeqAccess<'de> for SeqAccess<'a, R> {
+    type Error = Error;
+
+fn next_element_seed<T>(
+    &mut self, 
+    seed: T
+) -> Result<Option<T::Value>> where
+    T: serde::de::DeserializeSeed<'de> {
+        if self.current > 0 {
+            self.de.current_field.pop();
+        }
+        self.de.current_field.push(self.current.to_string());
+        if self.de.read.get_attribute_value(&self.de.current_field).is_none() {
+            return Ok(None);
+        }
+        self.current += 1;
+        seed.deserialize(&mut *self.de).map(Some)
+    }
+}
+
 struct MapAccess<'a, R: 'a> {
     de: &'a mut Deserializer<R>,
     keys: &'static [&'static str],
@@ -396,7 +431,7 @@ impl<'de, 'a, R: Read + 'a> serde::de::MapAccess<'de> for MapAccess<'a, R> {
         if self.current >= self.keys.len() {
             Ok(None)
         } else {
-            self.de.current_field.push(self.keys[self.current]);
+            self.de.current_field.push(self.keys[self.current].to_string());
             self.current += 1;
             seed.deserialize(&mut *self.de).map(Some)
         }

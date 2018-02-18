@@ -5,21 +5,20 @@ use rusoto_dynamodb::AttributeValue;
 
 use error::{Error, Result};
 
-
 struct HashMapWriter {
-    current_key_path: Vec<&'static str>,
-    hashmap: HashMap<Vec<&'static str>, AttributeValue>,
+    current_key_path: Vec<String>,
+    hashmap: HashMap<Vec<String>, AttributeValue>,
 }
 trait HashMapWriterTrait {
-    fn push_current_key(&mut self, key: &'static str);
+    fn push_current_key(&mut self, key: &str);
     fn pop_current_key(&mut self);
     fn is_in_object(&self) -> bool;
     fn insert_value(&mut self, value: AttributeValue);
     fn start_new_object(&mut self);
 }
 impl<'a> HashMapWriterTrait for &'a mut HashMapWriter {
-    fn push_current_key(&mut self, key: &'static str) {
-        self.current_key_path.push(key);
+    fn push_current_key(&mut self, key: &str) {
+        self.current_key_path.push(key.to_string());
     }
     fn pop_current_key(&mut self) {
         self.current_key_path.pop();
@@ -249,7 +248,7 @@ where
     }
 
     fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq> {
-        Ok(Compound { ser: self })
+        Ok(Compound { ser: self, current: 0 })
     }
 
     fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple> {
@@ -278,7 +277,7 @@ where
         if self.writer.is_in_object() {
             self.writer.start_new_object();
         }
-        Ok(Compound { ser: self })
+        Ok(Compound { ser: self, current: 0 })
     }
 
     fn serialize_struct(self, _name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
@@ -298,6 +297,7 @@ where
 
 struct Compound<'a, W: 'a> {
     ser: &'a mut Serializer<W>,
+    current: usize,
 }
 
 impl<'a, W> serde::ser::SerializeSeq for Compound<'a, W>
@@ -307,15 +307,21 @@ where
     type Ok = ();
     type Error = Error;
 
-    fn serialize_element<T: ?Sized>(&mut self, _value: &T) -> Result<()>
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()>
     where
         T: serde::ser::Serialize,
     {
-        unimplemented!()
+
+        let i : &str = &self.current.to_string();
+        self.ser.writer.push_current_key(i);
+        try!(value.serialize(&mut *self.ser));
+        self.ser.writer.pop_current_key();
+        self.current += 1;
+        Ok(())
     }
 
     fn end(self) -> Result<()> {
-        unimplemented!()
+        Ok(())
     }
 }
 
@@ -454,7 +460,7 @@ where
 }
 
 fn unflatten(
-    hashmap: HashMap<Vec<&'static str>, AttributeValue>,
+    hashmap: HashMap<Vec<String>, AttributeValue>,
 ) -> HashMap<String, AttributeValue> {
     let mut result = HashMap::new();
     hashmap.into_iter().for_each(|(k, v)| {
