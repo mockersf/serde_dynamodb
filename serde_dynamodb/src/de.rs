@@ -299,12 +299,17 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         unimplemented!()
     }
 
-    #[inline]
-    fn deserialize_option<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        if self.read.get_attribute_value(&self.current_field).is_none() {
+            return visitor.visit_none()
+        }
+        match self.read.get_attribute_value(&self.current_field).unwrap().null {
+            Some(true) => visitor.visit_none(),
+            _ => visitor.visit_some(self),
+        }
     }
 
     fn deserialize_unit<V>(self, _visitor: V) -> Result<V::Value>

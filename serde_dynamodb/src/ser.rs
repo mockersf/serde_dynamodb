@@ -210,7 +210,9 @@ where
     }
 
     fn serialize_unit(self) -> Result<()> {
-        Ok(())
+        self.reject_non_struct_root(&mut move |_writer: &mut W| {
+            Ok(())
+        })
     }
 
     fn serialize_unit_struct(self, _name: &'static str) -> Result<()> {
