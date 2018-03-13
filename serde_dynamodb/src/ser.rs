@@ -251,7 +251,13 @@ where
     }
 
     fn serialize_none(self) -> Result<()> {
-        self.serialize_unit()
+        self.reject_non_struct_root(&mut move |writer: &mut W| {
+            writer.insert_value(AttributeValue {
+                null: Some(true),
+                ..Default::default()
+            });
+            Ok(())
+        })
     }
 
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<()>

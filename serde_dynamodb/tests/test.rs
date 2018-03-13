@@ -105,6 +105,7 @@ fn can_go_back_and_forth() {
         list: Vec<i32>,
         some: Option<Internal>,
         none: Option<Internal>,
+        complex: Vec<Option<Internal>>,
     }
     let value = Basic {
         i: 18,
@@ -121,6 +122,10 @@ fn can_go_back_and_forth() {
             f: 144.304,
         }),
         none: None,
+        complex: vec!(None, Some(Internal{
+            k: 10,
+            f: 12.56,
+        }))
     };
     let hm = serde_dynamodb::to_hashmap(&value).unwrap();
     let out = serde_dynamodb::from_hashmap::<Basic>(hm).unwrap();
