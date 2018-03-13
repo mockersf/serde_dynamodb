@@ -245,11 +245,20 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         )
     }
 
-    fn deserialize_char<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        visitor.visit_char(
+            self.read
+                .get_attribute_value(&self.current_field)
+                .unwrap()
+                .clone()
+                .s
+                .unwrap()
+                .parse::<char>()
+                .unwrap(),
+        )
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>

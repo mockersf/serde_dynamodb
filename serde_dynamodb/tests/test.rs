@@ -101,6 +101,7 @@ fn can_go_back_and_forth() {
         d: f64,
         b: u8,
         u: u32,
+        c: char,
         intern: Internal,
         list: Vec<i32>,
     }
@@ -111,6 +112,7 @@ fn can_go_back_and_forth() {
         d: -45206.153,
         b: 13,
         u: 312,
+        c: 0 as char,
         intern: Internal { k: 512, f:13.54, },
         list: vec!(0, 2, 5),
     };

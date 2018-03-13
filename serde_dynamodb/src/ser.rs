@@ -187,8 +187,12 @@ where
         })
     }
 
-    fn serialize_char(self, _value: char) -> Result<()> {
-        unimplemented!()
+    fn serialize_char(self, value: char) -> Result<()> {
+        self.writer.insert_value(AttributeValue {
+            s: Some(value.to_string()),
+            ..Default::default()
+        });
+        Ok(())
     }
 
     fn serialize_str(self, value: &str) -> Result<()> {
