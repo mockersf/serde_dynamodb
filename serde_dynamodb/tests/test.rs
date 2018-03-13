@@ -70,10 +70,15 @@ fn can_deserialize_struct() {
             ..Default::default()
         },
     );
+    let mut intern = HashMap::new();
+    intern.insert("k".to_string(), AttributeValue {
+        n: Some("27".to_string()),
+        ..Default::default()
+    });
     value.insert(
-        "intern-k".to_string(),
+        "intern".to_string(),
         AttributeValue {
-            n: Some("27".to_string()),
+            m: Some(intern),
             ..Default::default()
         },
     );
