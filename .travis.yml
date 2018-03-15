@@ -24,11 +24,11 @@ cache: cargo
 
 before_script:
   - export PATH="$PATH:$HOME/.cargo/bin"
-  - which rustfmt || cargo install rustfmt
+  - rustup component add rustfmt-preview
   - cargo install --force cargo-travis
 
 script:
-  - cargo fmt --all -- --write-mode=diff --force
+  - cargo fmt --all -- --write-mode=diff
   - cargo build
   - cargo test
 
