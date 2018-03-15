@@ -1,7 +1,7 @@
 extern crate proc_macro;
-extern crate syn;
 #[macro_use]
 extern crate quote;
+extern crate syn;
 
 use proc_macro::TokenStream;
 use syn::*;
@@ -9,21 +9,18 @@ use syn::NestedMetaItem::MetaItem;
 use syn::MetaItem::NameValue;
 use syn::MetaItem::List;
 
-
 fn impl_build_query_input(
     name: &Ident,
     visibility: &Visibility,
     variant_data: VariantData,
     ty_params: &[TyParam],
 ) -> quote::Tokens {
-
     let types = get_type_params(ty_params);
     let type_params = quote! { <#(#types)*> };
     let fields_as_options: Vec<Field> = variant_data
         .fields()
         .iter()
         .map(|field| {
-
             // wrap type in an option to allow filtering only on some fields
             let original_type: &syn::Ty = &field.ty;
             let optional_type = Ty::Path(
@@ -38,7 +35,7 @@ fn impl_build_query_input(
                                     lifetimes: vec![],
                                     bindings: vec![],
                                     types: vec![original_type.clone()],
-                                }
+                                },
                             ),
                         },
                     ],
@@ -126,9 +123,10 @@ fn impl_build_query_input(
             let field_name = format!("{}", field.ident.clone().unwrap());
 
             let mut renamed = field_name.clone();
-            for meta_items in field.attrs.iter().filter_map(|meta_items| {
-                get_meta_items_from("serde", meta_items)
-            })
+            for meta_items in field
+                .attrs
+                .iter()
+                .filter_map(|meta_items| get_meta_items_from("serde", meta_items))
             {
                 for meta_item in meta_items {
                     match meta_item {
@@ -192,8 +190,8 @@ fn get_type_params(ty_params: &[TyParam]) -> Vec<quote::Tokens> {
         .map(|ty_param| {
             let type_ident = &ty_param.ident;
             quote! {
-            #type_ident,
-        }
+                #type_ident,
+            }
         })
         .collect()
 }
@@ -202,10 +200,7 @@ fn get_string_from_lit(attr_name: &str, lit: &syn::Lit) -> String {
     if let syn::Lit::Str(ref s, _) = *lit {
         s.clone()
     } else {
-        panic!(format!(
-            "expected {} attribute to be a string",
-            attr_name,
-        ));
+        panic!(format!("expected {} attribute to be a string", attr_name,));
     }
 }
 

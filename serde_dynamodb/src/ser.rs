@@ -40,7 +40,6 @@ impl<'a> WriterTrait for &'a mut VecWriter {
     }
 }
 
-
 struct Serializer<W> {
     writer: W,
 }

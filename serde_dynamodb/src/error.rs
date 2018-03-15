@@ -9,12 +9,16 @@ pub struct Error {
 }
 impl serde::ser::Error for Error {
     fn custom<T: std::fmt::Display>(msg: T) -> Error {
-        Error { message: format!("{}", msg) }
+        Error {
+            message: format!("{}", msg),
+        }
     }
 }
 impl serde::de::Error for Error {
     fn custom<T: std::fmt::Display>(msg: T) -> Error {
-        Error { message: format!("{}", msg) }
+        Error {
+            message: format!("{}", msg),
+        }
     }
 }
 impl std::fmt::Display for Error {

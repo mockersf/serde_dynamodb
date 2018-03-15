@@ -1,5 +1,5 @@
-extern crate serde;
 extern crate rusoto_dynamodb;
+extern crate serde;
 
 mod ser;
 mod de;

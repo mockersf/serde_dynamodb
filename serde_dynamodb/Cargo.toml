@@ -4,8 +4,8 @@ version = "0.0.2"
 authors = ["François Mockers <mockersf@gmail.com>"]
 
 [dependencies]
-serde = "*"
-rusoto_dynamodb = "*"
+serde = "1.0.32"
+rusoto_dynamodb = "0.32"
 
 [dev-dependencies]
 serde_derive = "*"
