@@ -24,13 +24,8 @@ cache: cargo
 
 before_script:
   - export PATH="$PATH:$HOME/.cargo/bin"
-  - rustup component add rustfmt-preview
-  - cargo install --force cargo-travis
 
-script:
-  - cargo fmt --all -- --write-mode=diff
-  - cargo build
-  - cargo test
+script: ./travis/build.sh
 
 after_success:
   - cargo coveralls
