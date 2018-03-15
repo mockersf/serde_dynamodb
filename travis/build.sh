@@ -6,8 +6,8 @@ cargo test
 
 if [ "${TRAVIS_RUST_VERSION}" = "stable" ]; then
     rustup component add rustfmt-preview
-    cargo install --force cargo-travis
-
     cargo fmt --all -- --write-mode=diff
-    cargo coveralls
+
+#    cargo install --force cargo-travis
+#    cargo coveralls
 fi
