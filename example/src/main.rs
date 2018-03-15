@@ -10,9 +10,8 @@ extern crate rusoto_dynamodb;
 
 extern crate uuid;
 
-use rusoto_core::{DefaultCredentialsProvider, Region};
+use rusoto_core::Region;
 use rusoto_dynamodb::{DynamoDb, DynamoDbClient, PutItemInput, QueryInput};
-use rusoto_core::default_tls_client;
 
 use serde_dynamodb::ToQueryInput;
 
@@ -24,8 +23,7 @@ struct Task {
 }
 
 fn main() {
-    let provider = DefaultCredentialsProvider::new().unwrap();
-    let client = DynamoDbClient::new(default_tls_client().unwrap(), provider, Region::UsEast1);
+    let client = DynamoDbClient::simple(Region::UsEast1);
 
     let task = Task {
         id: String::from("Entry ID"),
@@ -46,6 +44,7 @@ fn main() {
 
     let _my_tasks: Vec<Task> = client
         .query(&task_query_input.to_query_input(String::from("tableName")))
+        .sync()
         .unwrap()
         .items
         .unwrap_or_else(|| vec![])
