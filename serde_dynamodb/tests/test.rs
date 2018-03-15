@@ -10,7 +10,25 @@ use rusoto_dynamodb::AttributeValue;
 
 #[test]
 fn cant_serialize_non_struct() {
-    assert!(serde_dynamodb::to_hashmap(&5).is_err())
+    let number : u8 = 5;
+    assert!(serde_dynamodb::to_hashmap(&number).is_err());
+    let number : u16 = 5;
+    assert!(serde_dynamodb::to_hashmap(&number).is_err());
+    let number : u32 = 5;
+    assert!(serde_dynamodb::to_hashmap(&number).is_err());
+    let number : u64 = 5;
+    assert!(serde_dynamodb::to_hashmap(&number).is_err());
+
+    let number : f32 = 5.1;
+    assert!(serde_dynamodb::to_hashmap(&number).is_err());
+    let number : f64 = 5.2;
+    assert!(serde_dynamodb::to_hashmap(&number).is_err());
+
+    let none : Option<f64> = None;
+    assert!(serde_dynamodb::to_hashmap(&none).is_err());
+
+    let some : Option<f64> = Some(13.54);
+    assert!(serde_dynamodb::to_hashmap(&some).is_err());
 }
 
 #[test]
@@ -18,8 +36,9 @@ fn can_serialize_struct() {
     #[derive(Serialize)]
     struct Basic {
         i: i32,
+        f: f32,
     }
-    let value = Basic { i: 5 };
+    let value = Basic { i: 5, f:10.2 };
     assert!(serde_dynamodb::to_hashmap(&value).is_ok())
 }
 
@@ -50,10 +69,15 @@ fn can_deserialize_struct() {
             ..Default::default()
         },
     );
+    let mut intern = HashMap::new();
+    intern.insert("k".to_string(), AttributeValue {
+        n: Some("27".to_string()),
+        ..Default::default()
+    });
     value.insert(
-        "intern-k".to_string(),
+        "intern".to_string(),
         AttributeValue {
-            n: Some("27".to_string()),
+            m: Some(intern),
             ..Default::default()
         },
     );
@@ -66,17 +90,42 @@ fn can_go_back_and_forth() {
     #[derive(Deserialize, Serialize, Debug, PartialEq)]
     struct Internal {
         k: i32,
+        f: f64,
     }
     #[derive(Deserialize, Serialize, Debug, PartialEq)]
     struct Basic {
         i: i32,
         j: i32,
+        f: f32,
+        d: f64,
+        b: u8,
+        u: u32,
+        c: char,
         intern: Internal,
+        list: Vec<i32>,
+        some: Option<Internal>,
+        none: Option<Internal>,
+        complex: Vec<Option<Internal>>,
     }
     let value = Basic {
         i: 18,
         j: 74,
-        intern: Internal { k: 512 },
+        f: 21.55,
+        d: -45206.153,
+        b: 13,
+        u: 312,
+        c: 0 as char,
+        intern: Internal { k: 512, f:13.54, },
+        list: vec!(0, 2, 5),
+        some: Some(Internal{
+            k: 120,
+            f: 144.304,
+        }),
+        none: None,
+        complex: vec!(None, Some(Internal{
+            k: 10,
+            f: 12.56,
+        }))
     };
     let hm = serde_dynamodb::to_hashmap(&value).unwrap();
     let out = serde_dynamodb::from_hashmap::<Basic>(hm).unwrap();

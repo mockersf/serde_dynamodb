@@ -6,30 +6,38 @@ use rusoto_dynamodb::AttributeValue;
 use error::{Error, Result};
 
 struct HashMapWriter {
-    current_key_path: Vec<&'static str>,
-    hashmap: HashMap<Vec<&'static str>, AttributeValue>,
+    current_key: String,
+    root: HashMap<String, AttributeValue>,
 }
-trait HashMapWriterTrait {
-    fn push_current_key(&mut self, key: &'static str);
-    fn pop_current_key(&mut self);
+trait WriterTrait {
+    fn set_key(&mut self, key : String);
     fn is_in_object(&self) -> bool;
     fn insert_value(&mut self, value: AttributeValue);
-    fn start_new_object(&mut self);
 }
-impl<'a> HashMapWriterTrait for &'a mut HashMapWriter {
-    fn push_current_key(&mut self, key: &'static str) {
-        self.current_key_path.push(key);
-    }
-    fn pop_current_key(&mut self) {
-        self.current_key_path.pop();
+impl<'a> WriterTrait for &'a mut HashMapWriter {
+    fn set_key(&mut self, key: String) {
+        self.current_key = key;
     }
     fn is_in_object(&self) -> bool {
-        !self.current_key_path.is_empty()
+        !self.current_key.is_empty()
     }
     fn insert_value(&mut self, value: AttributeValue) {
-        self.hashmap.insert(self.current_key_path.clone(), value);
+        self.root.insert(self.current_key.clone(), value);
     }
-    fn start_new_object(&mut self) {}
+}
+
+struct VecWriter {
+    list: Vec<AttributeValue>,
+}
+
+impl<'a> WriterTrait for &'a mut VecWriter {
+    fn set_key(&mut self, _key: String) {}
+    fn is_in_object(&self) -> bool {
+        true
+    }
+    fn insert_value(&mut self, value: AttributeValue) {
+        self.list.push(value);
+    }
 }
 
 struct Serializer<W> {
@@ -37,7 +45,7 @@ struct Serializer<W> {
 }
 impl<W> Serializer<W>
 where
-    W: HashMapWriterTrait,
+    W: WriterTrait,
 {
     pub fn new(writer: W) -> Self {
         Serializer { writer: writer }
@@ -55,12 +63,12 @@ where
 }
 impl<'a, W> serde::Serializer for &'a mut Serializer<W>
 where
-    W: HashMapWriterTrait,
+    W: WriterTrait,
 {
     type Ok = ();
     type Error = Error;
 
-    type SerializeSeq = Compound<'a, W>;
+    type SerializeSeq = SeqWriter<'a, W>;
     type SerializeTuple = Compound<'a, W>;
     type SerializeTupleStruct = Compound<'a, W>;
     type SerializeTupleVariant = Compound<'a, W>;
@@ -89,7 +97,7 @@ where
     }
 
     fn serialize_i16(self, value: i16) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
+                self.reject_non_struct_root(&mut move |writer: &mut W| {
             writer.insert_value(AttributeValue {
                 n: Some(value.to_string()),
                 ..Default::default()
@@ -109,7 +117,7 @@ where
     }
 
     fn serialize_i64(self, value: i64) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
+         self.reject_non_struct_root(&mut move |writer: &mut W| {
             writer.insert_value(AttributeValue {
                 n: Some(value.to_string()),
                 ..Default::default()
@@ -158,16 +166,32 @@ where
         })
     }
 
-    fn serialize_f32(self, _value: f32) -> Result<()> {
-        unimplemented!()
+    fn serialize_f32(self, value: f32) -> Result<()> {
+        self.reject_non_struct_root(&mut move |writer: &mut W| {
+            writer.insert_value(AttributeValue {
+                n: Some(value.to_string()),
+                ..Default::default()
+            });
+            Ok(())
+        })
     }
 
-    fn serialize_f64(self, _value: f64) -> Result<()> {
-        unimplemented!()
+    fn serialize_f64(self, value: f64) -> Result<()> {
+        self.reject_non_struct_root(&mut move |writer: &mut W| {
+            writer.insert_value(AttributeValue {
+                n: Some(value.to_string()),
+                ..Default::default()
+            });
+            Ok(())
+        })
     }
 
-    fn serialize_char(self, _value: char) -> Result<()> {
-        unimplemented!()
+    fn serialize_char(self, value: char) -> Result<()> {
+        self.writer.insert_value(AttributeValue {
+            s: Some(value.to_string()),
+            ..Default::default()
+        });
+        Ok(())
     }
 
     fn serialize_str(self, value: &str) -> Result<()> {
@@ -185,7 +209,9 @@ where
     }
 
     fn serialize_unit(self) -> Result<()> {
-        Ok(())
+        self.reject_non_struct_root(&mut move |_writer: &mut W| {
+            Ok(())
+        })
     }
 
     fn serialize_unit_struct(self, _name: &'static str) -> Result<()> {
@@ -224,7 +250,13 @@ where
     }
 
     fn serialize_none(self) -> Result<()> {
-        self.serialize_unit()
+        self.reject_non_struct_root(&mut move |writer: &mut W| {
+            writer.insert_value(AttributeValue {
+                null: Some(true),
+                ..Default::default()
+            });
+            Ok(())
+        })
     }
 
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<()>
@@ -235,7 +267,7 @@ where
     }
 
     fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq> {
-        Ok(Compound { ser: self })
+        Ok(SeqWriter::new(self))
     }
 
     fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple> {
@@ -261,10 +293,7 @@ where
     }
 
     fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap> {
-        if self.writer.is_in_object() {
-            self.writer.start_new_object();
-        }
-        Ok(Compound { ser: self })
+        Ok(Compound::new(self))
     }
 
     fn serialize_struct(self, _name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
@@ -282,32 +311,65 @@ where
     }
 }
 
-struct Compound<'a, W: 'a> {
+struct SeqWriter<'a, W: 'a> {
     ser: &'a mut Serializer<W>,
+    current: VecWriter,
 }
 
-impl<'a, W> serde::ser::SerializeSeq for Compound<'a, W>
+impl<'a, W> SeqWriter<'a, W> {
+    fn new(ser: &'a mut Serializer<W>) -> SeqWriter<'a, W> {
+        let writer = VecWriter {
+            list: Vec::new(),
+        };
+        SeqWriter { ser, current: writer}
+    }
+}
+
+impl<'a, W> serde::ser::SerializeSeq for SeqWriter<'a, W>
 where
-    W: HashMapWriterTrait,
+    W: WriterTrait,
 {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_element<T: ?Sized>(&mut self, _value: &T) -> Result<()>
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()>
     where
         T: serde::ser::Serialize,
     {
-        unimplemented!()
+        let mut ser = Serializer::new(&mut self.current);
+        value.serialize(&mut ser)
     }
 
     fn end(self) -> Result<()> {
-        unimplemented!()
+        self.ser.writer.insert_value(AttributeValue{
+            l: Some(self.current.list.clone()),
+            ..Default::default()
+        });
+        Ok(())
+    }
+}
+
+struct Compound<'a, W: 'a> {
+    ser: &'a mut Serializer<W>,
+    is_root: bool,
+    current: HashMapWriter,
+}
+
+impl<'a, W> Compound<'a, W> where
+    W: WriterTrait, {
+    fn new(ser: &'a mut Serializer<W>) -> Compound<'a, W> {
+        let writer = HashMapWriter {
+            root: HashMap::new(),
+            current_key: String::new(),
+        };
+        let is_root = !ser.writer.is_in_object();
+        Compound { ser, is_root, current: writer}
     }
 }
 
 impl<'a, W> serde::ser::SerializeTuple for Compound<'a, W>
 where
-    W: HashMapWriterTrait,
+    W: WriterTrait,
 {
     type Ok = ();
     type Error = Error;
@@ -327,7 +389,7 @@ where
 
 impl<'a, W> serde::ser::SerializeTupleStruct for Compound<'a, W>
 where
-    W: HashMapWriterTrait,
+    W: WriterTrait,
 {
     type Ok = ();
     type Error = Error;
@@ -346,7 +408,7 @@ where
 
 impl<'a, W> serde::ser::SerializeTupleVariant for Compound<'a, W>
 where
-    W: HashMapWriterTrait,
+    W: WriterTrait,
 {
     type Ok = ();
     type Error = Error;
@@ -365,7 +427,7 @@ where
 
 impl<'a, W> serde::ser::SerializeMap for Compound<'a, W>
 where
-    W: HashMapWriterTrait,
+    W: WriterTrait,
 {
     type Ok = ();
     type Error = Error;
@@ -391,7 +453,7 @@ where
 
 impl<'a, W> serde::ser::SerializeStruct for Compound<'a, W>
 where
-    W: HashMapWriterTrait,
+    W: WriterTrait,
 {
     type Ok = ();
     type Error = Error;
@@ -400,20 +462,30 @@ where
     where
         T: serde::ser::Serialize,
     {
-        self.ser.writer.push_current_key(key);
-        try!(value.serialize(&mut *self.ser));
-        self.ser.writer.pop_current_key();
-        Ok(())
+        if self.is_root {
+            self.ser.writer.set_key(key.to_string());
+            try!(value.serialize(&mut *self.ser));
+            Ok(())
+        } else {
+            (&mut self.current).set_key(key.to_string());
+            to_writer(&mut self.current, value)
+        }
     }
 
     fn end(self) -> Result<()> {
+        if !self.is_root {
+            self.ser.writer.insert_value(AttributeValue{
+                m: Some(self.current.root.clone()),
+                ..Default::default()
+            });
+        }
         Ok(())
     }
 }
 
 impl<'a, W> serde::ser::SerializeStructVariant for Compound<'a, W>
 where
-    W: HashMapWriterTrait,
+    W: WriterTrait,
 {
     type Ok = ();
     type Error = Error;
@@ -439,24 +511,14 @@ where
     Ok(())
 }
 
-fn unflatten(
-    hashmap: HashMap<Vec<&'static str>, AttributeValue>,
-) -> HashMap<String, AttributeValue> {
-    let mut result = HashMap::new();
-    hashmap.into_iter().for_each(|(k, v)| {
-        result.insert(k.join("-"), v);
-    });
-    result
-}
-
 pub fn to_hashmap<T: ?Sized>(value: &T) -> Result<HashMap<String, AttributeValue>>
 where
     T: serde::ser::Serialize,
 {
     let mut writer = HashMapWriter {
-        hashmap: HashMap::new(),
-        current_key_path: vec![],
+        root: HashMap::new(),
+        current_key: String::new(),
     };
     try!(to_writer(&mut writer, value));
-    Ok(unflatten(writer.hashmap))
+    Ok(writer.root)
 }
