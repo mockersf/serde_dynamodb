@@ -24,8 +24,7 @@ let put_item = PutItemInput {
     ..Default::default()
 };
 
-let provider = DefaultCredentialsProvider::new().unwrap();
-let client = DynamoDbClient::new(default_tls_client().unwrap(), provider, Region::UsEast1);
+let client = DynamoDbClient::simple(Region::UsEast1);
 client.put_item(&put_item).unwrap();
 ```
 
