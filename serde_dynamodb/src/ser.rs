@@ -5,7 +5,6 @@ use rusoto_dynamodb::AttributeValue;
 
 use error::{Error, Result};
 
-
 struct HashMapWriter {
     current_key_path: Vec<&'static str>,
     hashmap: HashMap<Vec<&'static str>, AttributeValue>,
@@ -32,7 +31,6 @@ impl<'a> HashMapWriterTrait for &'a mut HashMapWriter {
     }
     fn start_new_object(&mut self) {}
 }
-
 
 struct Serializer<W> {
     writer: W,

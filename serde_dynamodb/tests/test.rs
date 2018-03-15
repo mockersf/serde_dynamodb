@@ -1,7 +1,7 @@
+extern crate rusoto_dynamodb;
+extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
-extern crate rusoto_dynamodb;
 
 extern crate serde_dynamodb;
 
@@ -83,8 +83,6 @@ fn can_go_back_and_forth() {
     assert_eq!(value, out);
 }
 
-
-
 #[test]
 fn can_serialize_struct_leveled() {
     #[derive(Serialize)]
@@ -95,7 +93,9 @@ fn can_serialize_struct_leveled() {
     struct Basic {
         intern: Internal,
     }
-    let value = Basic { intern: Internal { i: 5 } };
+    let value = Basic {
+        intern: Internal { i: 5 },
+    };
     assert!(serde_dynamodb::to_hashmap(&value).is_ok())
 }
 

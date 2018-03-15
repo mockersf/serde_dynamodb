@@ -5,7 +5,6 @@ use rusoto_dynamodb::AttributeValue;
 
 use error::{Error, Result};
 
-
 trait Read {
     fn get_attribute_value(&self, keypath: &[&'static str]) -> Option<&AttributeValue>;
 }
@@ -22,7 +21,6 @@ impl Read for HashMapRead {
         self.hashmap.get(&keypath.join("-"))
     }
 }
-
 
 struct Deserializer<R> {
     read: R,
@@ -157,8 +155,8 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
             field
                 .clone()
                 .s
-                .ok_or_else(|| {
-                    Error { message: format!("missing string for field {:?}", self.current_field) }
+                .ok_or_else(|| Error {
+                    message: format!("missing string for field {:?}", self.current_field),
                 })
                 .and_then(|string_field| visitor.visit_str(&string_field))
         } else {

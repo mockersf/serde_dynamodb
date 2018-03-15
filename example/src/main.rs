@@ -18,8 +18,7 @@ use serde_dynamodb::ToQueryInput;
 #[derive(Serialize, Deserialize, ToQueryInput)]
 struct Task {
     id: String,
-    #[serde(rename = "mystatus")]
-    status: Option<String>,
+    #[serde(rename = "mystatus")] status: Option<String>,
 }
 
 fn main() {
@@ -35,7 +34,6 @@ fn main() {
         item: serde_dynamodb::to_hashmap(&task).unwrap(),
         ..Default::default()
     };
-
 
     let task_query_input = TaskQueryInput {
         id: Some("Entry Id".to_string()),
