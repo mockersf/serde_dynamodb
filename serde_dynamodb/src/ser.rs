@@ -10,7 +10,7 @@ struct HashMapWriter {
     root: HashMap<String, AttributeValue>,
 }
 trait WriterTrait {
-    fn set_key(&mut self, key : String);
+    fn set_key(&mut self, key: String);
     fn is_in_object(&self) -> bool;
     fn insert_value(&mut self, value: AttributeValue);
 }
@@ -97,7 +97,7 @@ where
     }
 
     fn serialize_i16(self, value: i16) -> Result<()> {
-                self.reject_non_struct_root(&mut move |writer: &mut W| {
+        self.reject_non_struct_root(&mut move |writer: &mut W| {
             writer.insert_value(AttributeValue {
                 n: Some(value.to_string()),
                 ..Default::default()
@@ -117,7 +117,7 @@ where
     }
 
     fn serialize_i64(self, value: i64) -> Result<()> {
-         self.reject_non_struct_root(&mut move |writer: &mut W| {
+        self.reject_non_struct_root(&mut move |writer: &mut W| {
             writer.insert_value(AttributeValue {
                 n: Some(value.to_string()),
                 ..Default::default()
@@ -209,9 +209,7 @@ where
     }
 
     fn serialize_unit(self) -> Result<()> {
-        self.reject_non_struct_root(&mut move |_writer: &mut W| {
-            Ok(())
-        })
+        self.reject_non_struct_root(&mut move |_writer: &mut W| Ok(()))
     }
 
     fn serialize_unit_struct(self, _name: &'static str) -> Result<()> {
@@ -318,10 +316,11 @@ struct SeqWriter<'a, W: 'a> {
 
 impl<'a, W> SeqWriter<'a, W> {
     fn new(ser: &'a mut Serializer<W>) -> SeqWriter<'a, W> {
-        let writer = VecWriter {
-            list: Vec::new(),
-        };
-        SeqWriter { ser, current: writer}
+        let writer = VecWriter { list: Vec::new() };
+        SeqWriter {
+            ser,
+            current: writer,
+        }
     }
 }
 
@@ -341,7 +340,7 @@ where
     }
 
     fn end(self) -> Result<()> {
-        self.ser.writer.insert_value(AttributeValue{
+        self.ser.writer.insert_value(AttributeValue {
             l: Some(self.current.list.clone()),
             ..Default::default()
         });
@@ -355,15 +354,21 @@ struct Compound<'a, W: 'a> {
     current: HashMapWriter,
 }
 
-impl<'a, W> Compound<'a, W> where
-    W: WriterTrait, {
+impl<'a, W> Compound<'a, W>
+where
+    W: WriterTrait,
+{
     fn new(ser: &'a mut Serializer<W>) -> Compound<'a, W> {
         let writer = HashMapWriter {
             root: HashMap::new(),
             current_key: String::new(),
         };
         let is_root = !ser.writer.is_in_object();
-        Compound { ser, is_root, current: writer}
+        Compound {
+            ser,
+            is_root,
+            current: writer,
+        }
     }
 }
 
@@ -474,7 +479,7 @@ where
 
     fn end(self) -> Result<()> {
         if !self.is_root {
-            self.ser.writer.insert_value(AttributeValue{
+            self.ser.writer.insert_value(AttributeValue {
                 m: Some(self.current.root.clone()),
                 ..Default::default()
             });

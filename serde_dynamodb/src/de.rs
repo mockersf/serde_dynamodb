@@ -27,7 +27,7 @@ impl Read for HashMapRead {
     fn get_attribute_value(&self, index: &Index) -> Option<&AttributeValue> {
         match index {
             &Index::String(ref key) => self.hashmap.get(key),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -40,7 +40,7 @@ impl Read for VecRead {
     fn get_attribute_value(&self, index: &Index) -> Option<&AttributeValue> {
         match index {
             &Index::Number(key) => self.vec.get(key),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -304,9 +304,13 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         V: serde::de::Visitor<'de>,
     {
         if self.read.get_attribute_value(&self.current_field).is_none() {
-            return visitor.visit_none()
+            return visitor.visit_none();
         }
-        match self.read.get_attribute_value(&self.current_field).unwrap().null {
+        match self.read
+            .get_attribute_value(&self.current_field)
+            .unwrap()
+            .null
+        {
             Some(true) => visitor.visit_none(),
             _ => visitor.visit_some(self),
         }
@@ -411,7 +415,7 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
             &Index::String(ref value) => visitor.visit_str(&value.clone()),
             _ => Err(Error {
                 message: "indentifier should be a string".to_string(),
-            })
+            }),
         }
     }
 
@@ -430,24 +434,24 @@ struct SeqAccess<'a, R: 'a> {
 
 impl<'a, R: 'a> SeqAccess<'a, R> {
     fn new(de: &'a mut Deserializer<R>) -> Self {
-        SeqAccess {
-            de: de,
-            current: 0,
-        }
+        SeqAccess { de: de, current: 0 }
     }
 }
 
 impl<'de, 'a, R: Read + 'a> serde::de::SeqAccess<'de> for SeqAccess<'a, R> {
     type Error = Error;
 
-fn next_element_seed<T>(
-    &mut self, 
-    seed: T
-) -> Result<Option<T::Value>> where
-    T: serde::de::DeserializeSeed<'de> {
+    fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
+    where
+        T: serde::de::DeserializeSeed<'de>,
+    {
         self.de.current_field = Index::Number(self.current);
         self.current += 1;
-        if self.de.read.get_attribute_value(&self.de.current_field).is_none() {
+        if self.de
+            .read
+            .get_attribute_value(&self.de.current_field)
+            .is_none()
+        {
             return Ok(None);
         }
         seed.deserialize(&mut *self.de).map(Some)
