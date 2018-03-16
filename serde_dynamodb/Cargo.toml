@@ -8,6 +8,7 @@ homepage = "https://github.com/mockersf/serde_dynamodb"
 documentation = "https://docs.rs/serde_dynamodb"
 keywords = ["serde", "dynamodb"]
 license = "MIT"
+readme = "README.md"
 
 [badges]
 travis-ci = { repository = "mockersf/serde_dynamodb" }
