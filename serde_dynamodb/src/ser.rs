@@ -518,7 +518,6 @@ where
     Ok(())
 }
 
-
 /// Serialize the given data structure as an `HashMap<String, AttributeValue>`.
 ///
 /// # Errors
