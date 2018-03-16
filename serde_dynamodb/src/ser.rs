@@ -1,3 +1,5 @@
+//! Serialize a Rust data structure into HashMap.
+
 use std::collections::HashMap;
 
 use serde;
@@ -516,6 +518,13 @@ where
     Ok(())
 }
 
+
+/// Serialize the given data structure as an `HashMap<String, AttributeValue>`.
+///
+/// # Errors
+///
+/// Serialization can fail if `T`'s implementation of `Serialize` decides to
+/// fail, or if `T` contains a map with non-string keys.
 pub fn to_hashmap<T: ?Sized>(value: &T) -> Result<HashMap<String, AttributeValue>>
 where
     T: serde::ser::Serialize,

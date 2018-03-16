@@ -1,3 +1,5 @@
+//! Deserialize an HashMap into a Rust data structure.
+
 use std::collections::HashMap;
 
 use serde;
@@ -509,6 +511,17 @@ where
     Ok(value)
 }
 
+/// Deserialize an instance of type `T` from an `HashMap<String, AttributeValue>`.
+///
+/// # Errors
+///
+/// This conversion can fail if the structure of the input does not match the
+/// structure expected by `T`, for example if `T` is a struct type but the input
+/// contains something other than a JSON map. It can also fail if the structure
+/// is correct but `T`'s implementation of `Deserialize` decides that something
+/// is wrong with the data, for example required struct fields are missing from
+/// the JSON map or some number is too big to fit in the expected primitive
+/// type.
 pub fn from_hashmap<'a, T>(hm: HashMap<String, AttributeValue>) -> Result<T>
 where
     T: serde::de::Deserialize<'a>,

@@ -1,3 +1,5 @@
+//! This type represents all possible errors that can occur when serializing or deserializing DynamoDB data.
+
 use std;
 use serde;
 

@@ -1,6 +1,6 @@
 [package]
 name = "serde_dynamodb"
-version = "0.0.2"
+version = "0.1.0"
 authors = ["François Mockers <mockersf@gmail.com>"]
 
 [dependencies]
@@ -8,4 +8,6 @@ serde = "1.0.32"
 rusoto_dynamodb = "0.32"
 
 [dev-dependencies]
-serde_derive = "*"
+serde_derive = "1.0.32"
+rusoto_core = "0.32"
+rusoto_dynamodb = "0.32"
