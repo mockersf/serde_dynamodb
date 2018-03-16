@@ -2,6 +2,15 @@
 name = "serde_dynamodb"
 version = "0.1.0"
 authors = ["François Mockers <mockersf@gmail.com>"]
+description = "de/serialize struct to HashMap<String, AttributeValue> to use with Rusoto DynamoDB"
+repository = "https://github.com/mockersf/serde_dynamodb"
+homepage = "https://github.com/mockersf/serde_dynamodb"
+documentation = "https://docs.rs/serde_dynamodb"
+keywords = ["serde", "dynamodb"]
+license = "MIT"
+
+[badges]
+travis-ci = { repository = "mockersf/serde_dynamodb" }
 
 [dependencies]
 serde = "1.0.32"
