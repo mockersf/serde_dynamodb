@@ -1,6 +1,6 @@
 #  serde_dynamodb [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Build Status](https://travis-ci.org/mockersf/serde_dynamodb.svg?branch=master)](https://travis-ci.org/mockersf/serde_dynamodb) [![Build status](https://ci.appveyor.com/api/projects/status/jnckw7ll01cberis?svg=true)](https://ci.appveyor.com/project/mockersf/serde-dynamodb) [![Coverage Status](https://coveralls.io/repos/github/mockersf/serde_dynamodb/badge.svg?branch=master)](https://coveralls.io/github/mockersf/serde_dynamodb?branch=master) [![Realease Doc](https://docs.rs/serde_dynamodb/badge.svg)](https://docs.rs/serde_dynamodb) [![Crate](https://img.shields.io/crates/v/serde_dynamodb.svg)](https://crates.io/crates/serde_dynamodb)
 
-Library to de/serialize an object to an `HashMap` of `AttributeValue`s used by [rusoto_dynamodb](https://crates.io/crates/rusoto_dynamodb) to manipulate objects saved in dynamodb
+Library to de/serialize an object to an `HashMap` of `AttributeValue`s used by [rusoto_dynamodb](https://crates.io/crates/rusoto_dynamodb) to manipulate objects saved in dynamodb using [serde](https://serde.rs)
 
 ```toml
 [dependencies]
