@@ -6,7 +6,7 @@ description = "de/serialize struct to HashMap<String, AttributeValue> with Serde
 repository = "https://github.com/mockersf/serde_dynamodb"
 homepage = "https://github.com/mockersf/serde_dynamodb"
 documentation = "https://docs.rs/serde_dynamodb"
-keywords = ["serde", "dynamodb"]
+keywords = ["serde", "dynamodb", "rusoto"]
 license = "MIT"
 readme = "README.md"
 
