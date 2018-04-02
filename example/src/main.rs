@@ -18,7 +18,8 @@ use serde_dynamodb::ToQueryInput;
 #[derive(Serialize, Deserialize, ToQueryInput)]
 struct Task {
     id: String,
-    #[serde(rename = "mystatus")] status: Option<String>,
+    #[serde(rename = "mystatus")]
+    status: Option<String>,
 }
 
 fn main() {
