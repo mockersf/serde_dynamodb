@@ -7,6 +7,28 @@ use rusoto_dynamodb::AttributeValue;
 
 use error::{Error, Result};
 
+macro_rules! impl_deserialize_n {
+    ($type:ty, $method:ident, $visit:ident) => {
+        fn $method<V>(self, visitor: V) -> Result<V::Value>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            visitor.$visit(
+                self.read
+                    .get_attribute_value(&self.current_field)
+                    .ok_or_else(|| Error { message: format!("missing integer for field {:?}",
+                                                            &self.current_field) })?
+                    .clone()
+                    .n
+                    .ok_or_else(|| Error { message: format!("missing integer for field {:?}",
+                                                            &self.current_field) })?
+                    .parse::<$type>()
+                    .map_err(|_| Error { message: "Invalid type".to_owned() })?
+            )
+        }
+    };
+}
+
 #[derive(Debug)]
 enum Index {
     String(String),
@@ -77,190 +99,49 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
     where
         V: serde::de::Visitor<'de>,
     {
-        visitor.visit_bool(
-            self.read
-                .get_attribute_value(&self.current_field)
-                .unwrap()
-                .clone()
-                .bool
-                .unwrap(),
-        )
+        visitor.visit_bool(self.read
+            .get_attribute_value(&self.current_field)
+            .ok_or_else(|| Error {
+                message: "Missing field".to_owned(),
+            })?
+            .clone()
+            .bool
+            .ok_or_else(|| Error {
+                message: "Invalid type".to_owned(),
+            })?)
     }
 
-    fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: serde::de::Visitor<'de>,
-    {
-        visitor.visit_i8(
-            self.read
-                .get_attribute_value(&self.current_field)
-                .unwrap()
-                .clone()
-                .n
-                .unwrap()
-                .parse::<i8>()
-                .unwrap(),
-        )
-    }
+    impl_deserialize_n!(i8, deserialize_i8, visit_i8);
+    impl_deserialize_n!(i16, deserialize_i16, visit_i16);
+    impl_deserialize_n!(i32, deserialize_i32, visit_i32);
+    impl_deserialize_n!(i64, deserialize_i64, visit_i64);
 
-    fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: serde::de::Visitor<'de>,
-    {
-        visitor.visit_i16(
-            self.read
-                .get_attribute_value(&self.current_field)
-                .unwrap()
-                .clone()
-                .n
-                .unwrap()
-                .parse::<i16>()
-                .unwrap(),
-        )
-    }
+    impl_deserialize_n!(u8, deserialize_u8, visit_u8);
+    impl_deserialize_n!(u16, deserialize_u16, visit_u16);
+    impl_deserialize_n!(u32, deserialize_u32, visit_u32);
+    impl_deserialize_n!(u64, deserialize_u64, visit_u64);
 
-    fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: serde::de::Visitor<'de>,
-    {
-        visitor.visit_i32(
-            self.read
-                .get_attribute_value(&self.current_field)
-                .unwrap()
-                .clone()
-                .n
-                .unwrap()
-                .parse::<i32>()
-                .unwrap(),
-        )
-    }
-
-    fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: serde::de::Visitor<'de>,
-    {
-        visitor.visit_i64(
-            self.read
-                .get_attribute_value(&self.current_field)
-                .unwrap()
-                .clone()
-                .n
-                .unwrap()
-                .parse::<i64>()
-                .unwrap(),
-        )
-    }
-
-    fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: serde::de::Visitor<'de>,
-    {
-        visitor.visit_u8(
-            self.read
-                .get_attribute_value(&self.current_field)
-                .unwrap()
-                .clone()
-                .n
-                .unwrap()
-                .parse::<u8>()
-                .unwrap(),
-        )
-    }
-
-    fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: serde::de::Visitor<'de>,
-    {
-        visitor.visit_u16(
-            self.read
-                .get_attribute_value(&self.current_field)
-                .unwrap()
-                .clone()
-                .n
-                .unwrap()
-                .parse::<u16>()
-                .unwrap(),
-        )
-    }
-
-    fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: serde::de::Visitor<'de>,
-    {
-        visitor.visit_u32(
-            self.read
-                .get_attribute_value(&self.current_field)
-                .unwrap()
-                .clone()
-                .n
-                .unwrap()
-                .parse::<u32>()
-                .unwrap(),
-        )
-    }
-
-    fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: serde::de::Visitor<'de>,
-    {
-        visitor.visit_u64(
-            self.read
-                .get_attribute_value(&self.current_field)
-                .unwrap()
-                .clone()
-                .n
-                .unwrap()
-                .parse::<u64>()
-                .unwrap(),
-        )
-    }
-
-    fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: serde::de::Visitor<'de>,
-    {
-        visitor.visit_f32(
-            self.read
-                .get_attribute_value(&self.current_field)
-                .unwrap()
-                .clone()
-                .n
-                .unwrap()
-                .parse::<f32>()
-                .unwrap(),
-        )
-    }
-
-    fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: serde::de::Visitor<'de>,
-    {
-        visitor.visit_f64(
-            self.read
-                .get_attribute_value(&self.current_field)
-                .unwrap()
-                .clone()
-                .n
-                .unwrap()
-                .parse::<f64>()
-                .unwrap(),
-        )
-    }
+    impl_deserialize_n!(f32, deserialize_f32, visit_f32);
+    impl_deserialize_n!(f64, deserialize_f64, visit_f64);
 
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        visitor.visit_char(
-            self.read
-                .get_attribute_value(&self.current_field)
-                .unwrap()
-                .clone()
-                .s
-                .unwrap()
-                .parse::<char>()
-                .unwrap(),
-        )
+        visitor.visit_char(self.read
+            .get_attribute_value(&self.current_field)
+            .ok_or_else(|| Error {
+                message: format!("missing char for field {:?}", &self.current_field),
+            })?
+            .clone()
+            .s
+            .ok_or_else(|| Error {
+                message: format!("missing char for field {:?}", &self.current_field),
+            })?
+            .parse::<char>()
+            .map_err(|_| Error {
+                message: "Invalid type".to_owned(),
+            })?)
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>
@@ -272,7 +153,7 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
                 .clone()
                 .s
                 .ok_or_else(|| Error {
-                    message: format!("missing string for field {:?}", &self.current_field).clone(),
+                    message: format!("missing string for field {:?}", &self.current_field),
                 })
                 .and_then(|string_field| visitor.visit_str(&string_field))
         } else {
@@ -310,7 +191,9 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         }
         match self.read
             .get_attribute_value(&self.current_field)
-            .unwrap()
+            .ok_or_else(|| Error {
+                message: format!("missing option for field {:?}", &self.current_field),
+            })?
             .null
         {
             Some(true) => visitor.visit_none(),
@@ -343,9 +226,38 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
     where
         V: serde::de::Visitor<'de>,
     {
-        let list = self.read.get_attribute_value(&self.current_field).unwrap();
-        let read = VecRead {
-            vec: list.clone().l.unwrap(),
+        let list = self.read
+            .get_attribute_value(&self.current_field)
+            .ok_or_else(|| Error {
+                message: format!("missing sequence for field {:?}", &self.current_field),
+            })?
+            .clone();
+        let read = if let Some(alist) = list.l {
+            VecRead { vec: alist }
+        } else if let Some(numlist) = list.ns {
+            VecRead {
+                vec: numlist
+                    .into_iter()
+                    .map(|n| AttributeValue {
+                        n: Some(n),
+                        ..Default::default()
+                    })
+                    .collect(),
+            }
+        } else if let Some(slist) = list.ss {
+            VecRead {
+                vec: slist
+                    .into_iter()
+                    .map(|s| AttributeValue {
+                        s: Some(s),
+                        ..Default::default()
+                    })
+                    .collect(),
+            }
+        } else {
+            return Err(Error {
+                message: "No sequence input found".to_owned(),
+            });
         };
         let mut des = Deserializer::new(read);
         visitor.visit_seq(SeqAccess::new(&mut des))
@@ -389,8 +301,14 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         match self.current_field {
             Index::None => visitor.visit_map(MapAccess::new(self, fields)),
             _ => {
-                let map = self.read.get_attribute_value(&self.current_field).unwrap();
-                let hm = map.clone().m.unwrap();
+                let map = self.read
+                    .get_attribute_value(&self.current_field)
+                    .ok_or_else(|| Error {
+                        message: format!("missing struct for field {:?}", &self.current_field),
+                    })?;
+                let hm = map.clone().m.ok_or_else(|| Error {
+                    message: "Missing".to_owned(),
+                })?;
                 let mut des = Deserializer::new(HashMapRead::new(hm));
                 visitor.visit_map(MapAccess::new(&mut des, fields))
             }
