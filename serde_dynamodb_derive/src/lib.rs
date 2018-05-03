@@ -42,7 +42,7 @@ fn impl_build_query_input(
                 },
             );
 
-            // rename fields to ":field_name" to match syntax in dynamodb expressions
+            // rename fields to ":field_name" to match syntax in DynamoDB expressions
             let mut renamed_attributes: Vec<syn::Attribute> = field
                 .attrs
                 .iter()

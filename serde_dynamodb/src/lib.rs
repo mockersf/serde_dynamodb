@@ -41,7 +41,7 @@
 //!
 //! # Rusoto DynamoDB
 //!
-//! rusoto dynamodb map those values to [`AttributeValue`][rusoto_doc],
+//! Rusoto DynamoDB map those values to [`AttributeValue`][rusoto_doc],
 //! and functions to get/set/... from DynamoDB use `HashMap<String, AttributeValue>`
 //! as a way to represent the data.
 //!
@@ -83,7 +83,7 @@
 //!         s: Some(String::from("Smith")),
 //!         ..Default::default()
 //!     });
-//!     // get data from dynamodb
+//!     // get data from DynamoDB
 //!     let persons: Vec<Person> = client
 //!         .query(&QueryInput {
 //!             table_name: String::from("person"),
@@ -175,8 +175,8 @@ pub use ser::to_hashmap;
 pub use de::from_hashmap;
 pub use error::Error;
 
-/// A data structure that can be used as a dynamodb `QueryInput`
+/// A data structure that can be used as a DynamoDB `QueryInput`
 pub trait ToQueryInput {
-    /// Transform this structure as a dynamodb `QueryInput` on the given `table`
+    /// Transform this structure as a DynamoDB `QueryInput` on the given `table`
     fn to_query_input(&self, table: String) -> rusoto_dynamodb::QueryInput;
 }
