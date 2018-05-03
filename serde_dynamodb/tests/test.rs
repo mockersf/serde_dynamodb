@@ -5,7 +5,7 @@ extern crate serde_derive;
 
 extern crate serde_dynamodb;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use rusoto_dynamodb::AttributeValue;
 
 #[test]
@@ -143,6 +143,42 @@ fn can_serialize_struct_leveled() {
         intern: Internal { i: 5 },
     };
     assert!(serde_dynamodb::to_hashmap(&value).is_ok())
+}
+
+#[test]
+fn can_deserialize_hashset() {
+    #[derive(Deserialize, Debug, PartialEq)]
+    struct Foo {
+        bar: HashSet<String>,
+        baz: HashSet<u32>,
+    }
+    let mut value: HashMap<String, AttributeValue> = HashMap::new();
+    value.insert(
+        "bar".to_string(),
+        AttributeValue {
+            ss: Some(vec!["foo".to_owned(), "bar".to_owned()]),
+            ..Default::default()
+        },
+    );
+    value.insert(
+        "baz".to_string(),
+        AttributeValue {
+            ns: Some(vec!["3".to_owned(), "4".to_owned(), "5".to_owned()]),
+            ..Default::default()
+        },
+    );
+
+    let foo = serde_dynamodb::from_hashmap::<Foo>(value).unwrap();
+    let mut expected = HashSet::new();
+    expected.insert("foo".to_owned());
+    expected.insert("bar".to_owned());
+    assert_eq!(foo.bar, expected);
+
+    let mut expected = HashSet::new();
+    expected.insert(3);
+    expected.insert(4);
+    expected.insert(5);
+    assert_eq!(foo.baz, expected);
 }
 
 /*#[test]
