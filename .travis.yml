@@ -1,17 +1,5 @@
 language: rust
 
-# Dependencies of kcov, used by coverage
-addons:
-  apt:
-    packages:
-      - libcurl4-openssl-dev
-      - libelf-dev
-      - libdw-dev
-      - binutils-dev
-      - cmake
-    sources:
-      - kalakris-cmake
-
 rust:
   - stable
   - beta
@@ -19,34 +7,56 @@ rust:
 matrix:
   allow_failures:
     - rust: nightly
+    - env: CARGO-TRAVIS
   fast_finish: true
   include:
   - rust: stable
     env: RUSTFMT
     install:
-    - rustup component add rustfmt-preview
+      - rustup component add rustfmt-preview
     script:
-    - cargo fmt -- --write-mode=diff
+      - cargo fmt -- --write-mode=diff
   - rust: nightly
     env: CLIPPY
     install:
-    - travis_wait cargo install clippy || echo "clippy already installed"
+      - travis_wait cargo install cargo-update || echo "cargo-update already installed"
+      - travis_wait cargo install cargo-clippy || echo "cargo-clippy already installed"
+      - travis_wait cargo install-update -a # update outdated cached binaries
     script:
-    - cargo clippy -- -D clippy
+      - cargo clippy -- -D clippy
+  - rust: stable
+    sudo: required
+    env: CARGO-TRAVIS
+    install:
+      - travis_wait cargo install cargo-update || echo "cargo-update already installed"
+      - travis_wait cargo install cargo-travis || echo "cargo-travis already installed"
+      - travis_wait cargo install-update -a # update outdated cached binaries
+    script:
+      - cargo test
+    after_success:
+      - cargo coveralls
+    addons:
+      apt:
+        packages:
+          - libcurl4-openssl-dev
+          - libelf-dev
+          - libdw-dev
+          - binutils-dev
+          - cmake
+        sources:
+          - kalakris-cmake
+
 
 cache: cargo
 
 before_script:
   - export PATH="$PATH:$HOME/.cargo/bin"
 
-script: ./travis/build.sh
-
 after_success:
   - |
     if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" = "false" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_RUST_VERSION" == "beta" ]]; then
-      cargo coveralls
       cargo doc --no-deps &&
-      echo "<meta http-equiv=refresh content=0;url=jenkins_api/index.html>" > target/doc/index.html &&
+      echo "<meta http-equiv=refresh content=0;url=serde_dynamodb/index.html>" > target/doc/index.html &&
       git clone https://github.com/davisp/ghp-import.git &&
       ./ghp-import/ghp_import.py -n -p -f -m "Documentation upload" -r https://"$GH_TOKEN"@github.com/"$TRAVIS_REPO_SLUG.git" target/doc &&
       echo "Uploaded documentation"
