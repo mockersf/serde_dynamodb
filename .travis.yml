@@ -20,7 +20,7 @@ matrix:
     env: CLIPPY
     install:
       - cargo install cargo-update || echo "cargo-update already installed"
-      - cargo install cargo-clippy || echo "cargo-clippy already installed"
+      - cargo install clippy || echo "cargo-clippy already installed"
       - cargo install-update -a # update outdated cached binaries
     script:
       - cargo clippy
