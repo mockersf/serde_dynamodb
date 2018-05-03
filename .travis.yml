@@ -19,6 +19,20 @@ rust:
 matrix:
   allow_failures:
     - rust: nightly
+  fast_finish: true
+  include:
+  - rust: stable
+    env: RUSTFMT
+    install:
+    - rustup component add rustfmt-preview
+    script:
+    - cargo fmt -- --write-mode=diff
+  - rust: nightly
+    env: CLIPPY
+    install:
+    - travis_wait cargo install clippy || echo "clippy already installed"
+    script:
+    - cargo clippy -- -D clippy
 
 cache: cargo
 
@@ -28,4 +42,12 @@ before_script:
 script: ./travis/build.sh
 
 after_success:
-  - cargo coveralls
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" = "false" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_RUST_VERSION" == "beta" ]]; then
+      cargo coveralls
+      cargo doc --no-deps &&
+      echo "<meta http-equiv=refresh content=0;url=jenkins_api/index.html>" > target/doc/index.html &&
+      git clone https://github.com/davisp/ghp-import.git &&
+      ./ghp-import/ghp_import.py -n -p -f -m "Documentation upload" -r https://"$GH_TOKEN"@github.com/"$TRAVIS_REPO_SLUG.git" target/doc &&
+      echo "Uploaded documentation"
+    fi
