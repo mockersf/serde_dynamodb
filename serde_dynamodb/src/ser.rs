@@ -7,6 +7,7 @@ use rusoto_dynamodb::AttributeValue;
 
 use error::{Error, Result};
 
+#[derive(Debug)]
 struct HashMapWriter {
     current_key: String,
     root: HashMap<String, AttributeValue>,
@@ -28,6 +29,7 @@ impl<'a> WriterTrait for &'a mut HashMapWriter {
     }
 }
 
+#[derive(Debug)]
 struct VecWriter {
     list: Vec<AttributeValue>,
 }
@@ -42,6 +44,7 @@ impl<'a> WriterTrait for &'a mut VecWriter {
     }
 }
 
+#[derive(Debug)]
 struct Serializer<W> {
     writer: W,
 }
@@ -311,6 +314,7 @@ where
     }
 }
 
+#[derive(Debug)]
 struct SeqWriter<'a, W: 'a> {
     ser: &'a mut Serializer<W>,
     current: VecWriter,
@@ -350,6 +354,7 @@ where
     }
 }
 
+#[derive(Debug)]
 struct Compound<'a, W: 'a> {
     ser: &'a mut Serializer<W>,
     is_root: bool,

@@ -1,3 +1,7 @@
+#![deny(warnings, missing_debug_implementations, missing_copy_implementations, trivial_casts,
+        trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces,
+        unused_qualifications, missing_docs)]
+
 //! # DynamoDB
 //!
 //! In its low level API, DynamoDB works with JSON objects with extra levels to
@@ -171,6 +175,8 @@ pub use ser::to_hashmap;
 pub use de::from_hashmap;
 pub use error::Error;
 
+/// A data structure that can be used as a dynamodb `QueryInput`
 pub trait ToQueryInput {
+    /// Transform this structure as a dynamodb `QueryInput` on the given `table`
     fn to_query_input(&self, table: String) -> rusoto_dynamodb::QueryInput;
 }

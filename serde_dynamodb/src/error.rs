@@ -3,10 +3,13 @@
 use std;
 use serde;
 
+/// Alias for a Result with the error type `serde_dynamodb::Error`.
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// This type represents all possible errors that can occur when serializing to or deserializing from dynamodb.
 #[derive(Debug)]
 pub struct Error {
+    /// Message describing the error
     pub message: String,
 }
 impl serde::ser::Error for Error {

@@ -69,6 +69,7 @@ impl Read for VecRead {
     }
 }
 
+#[derive(Debug)]
 struct Deserializer<R> {
     read: R,
     current_field: Index,
