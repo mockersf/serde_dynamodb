@@ -19,18 +19,18 @@ matrix:
   - rust: nightly
     env: CLIPPY
     install:
-      - travis_wait cargo install cargo-update || echo "cargo-update already installed"
-      - travis_wait cargo install cargo-clippy || echo "cargo-clippy already installed"
-      - travis_wait cargo install-update -a # update outdated cached binaries
+      - cargo install cargo-update || echo "cargo-update already installed"
+      - cargo install cargo-clippy || echo "cargo-clippy already installed"
+      - cargo install-update -a # update outdated cached binaries
     script:
       - cargo clippy -- -D clippy
   - rust: stable
     sudo: required
     env: CARGO-TRAVIS
     install:
-      - travis_wait cargo install cargo-update || echo "cargo-update already installed"
-      - travis_wait cargo install cargo-travis || echo "cargo-travis already installed"
-      - travis_wait cargo install-update -a # update outdated cached binaries
+      - cargo install cargo-update || echo "cargo-update already installed"
+      - cargo install cargo-travis || echo "cargo-travis already installed"
+      - cargo install-update -a # update outdated cached binaries
     script:
       - cargo test
     after_success:
