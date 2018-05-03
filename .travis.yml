@@ -23,7 +23,7 @@ matrix:
       - cargo install cargo-clippy || echo "cargo-clippy already installed"
       - cargo install-update -a # update outdated cached binaries
     script:
-      - cargo clippy -- -D clippy
+      - cargo clippy
   - rust: stable
     sudo: required
     env: CARGO-TRAVIS
