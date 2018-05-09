@@ -7,6 +7,20 @@ use rusoto_dynamodb::AttributeValue;
 
 use error::{Error, Result};
 
+macro_rules! impl_serialize_n {
+    ($type:ty, $method:ident) => {
+        fn $method(self, value: $type) -> Result<()> {
+            self.reject_non_struct_root(&mut move |writer: &mut W| {
+                writer.insert_value(AttributeValue {
+                    n: Some(value.to_string()),
+                    ..Default::default()
+                });
+                Ok(())
+            })
+        }
+    };
+}
+
 #[derive(Debug)]
 struct HashMapWriter {
     current_key: String,
@@ -91,105 +105,16 @@ where
         })
     }
 
-    fn serialize_i8(self, value: i8) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                n: Some(value.to_string()),
-                ..Default::default()
-            });
-            Ok(())
-        })
-    }
-
-    fn serialize_i16(self, value: i16) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                n: Some(value.to_string()),
-                ..Default::default()
-            });
-            Ok(())
-        })
-    }
-
-    fn serialize_i32(self, value: i32) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                n: Some(value.to_string()),
-                ..Default::default()
-            });
-            Ok(())
-        })
-    }
-
-    fn serialize_i64(self, value: i64) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                n: Some(value.to_string()),
-                ..Default::default()
-            });
-            Ok(())
-        })
-    }
-
-    fn serialize_u8(self, value: u8) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                n: Some(value.to_string()),
-                ..Default::default()
-            });
-            Ok(())
-        })
-    }
-
-    fn serialize_u16(self, value: u16) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                n: Some(value.to_string()),
-                ..Default::default()
-            });
-            Ok(())
-        })
-    }
-
-    fn serialize_u32(self, value: u32) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                n: Some(value.to_string()),
-                ..Default::default()
-            });
-            Ok(())
-        })
-    }
-
-    fn serialize_u64(self, value: u64) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                n: Some(value.to_string()),
-                ..Default::default()
-            });
-            Ok(())
-        })
-    }
-
-    fn serialize_f32(self, value: f32) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                n: Some(value.to_string()),
-                ..Default::default()
-            });
-            Ok(())
-        })
-    }
-
-    fn serialize_f64(self, value: f64) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                n: Some(value.to_string()),
-                ..Default::default()
-            });
-            Ok(())
-        })
-    }
+    impl_serialize_n!(i8, serialize_i8);
+    impl_serialize_n!(i16, serialize_i16);
+    impl_serialize_n!(i32, serialize_i32);
+    impl_serialize_n!(i64, serialize_i64);
+    impl_serialize_n!(u8, serialize_u8);
+    impl_serialize_n!(u16, serialize_u16);
+    impl_serialize_n!(u32, serialize_u32);
+    impl_serialize_n!(u64, serialize_u64);
+    impl_serialize_n!(f32, serialize_f32);
+    impl_serialize_n!(f64, serialize_f64);
 
     fn serialize_char(self, value: char) -> Result<()> {
         self.writer.insert_value(AttributeValue {
