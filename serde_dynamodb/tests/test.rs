@@ -5,8 +5,8 @@ extern crate serde_derive;
 
 extern crate serde_dynamodb;
 
-use std::collections::{HashMap, HashSet};
 use rusoto_dynamodb::AttributeValue;
+use std::collections::{HashMap, HashSet};
 
 #[test]
 fn cant_serialize_non_struct() {

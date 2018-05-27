@@ -4,10 +4,10 @@ extern crate quote;
 extern crate syn;
 
 use proc_macro::TokenStream;
-use syn::*;
-use syn::NestedMetaItem::MetaItem;
-use syn::MetaItem::NameValue;
 use syn::MetaItem::List;
+use syn::MetaItem::NameValue;
+use syn::NestedMetaItem::MetaItem;
+use syn::*;
 
 fn impl_build_query_input(
     name: &Ident,

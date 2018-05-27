@@ -2,8 +2,8 @@
 
 use std::collections::HashMap;
 
-use serde;
 use rusoto_dynamodb::AttributeValue;
+use serde;
 
 use error::{Error, Result};
 
