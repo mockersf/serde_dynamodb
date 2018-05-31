@@ -27,18 +27,14 @@ fn impl_build_query_input(
                 None,
                 syn::Path {
                     global: false,
-                    segments: vec![
-                        syn::PathSegment {
-                            ident: Ident::new("Option"),
-                            parameters: PathParameters::AngleBracketed(
-                                AngleBracketedParameterData {
-                                    lifetimes: vec![],
-                                    bindings: vec![],
-                                    types: vec![original_type.clone()],
-                                },
-                            ),
-                        },
-                    ],
+                    segments: vec![syn::PathSegment {
+                        ident: Ident::new("Option"),
+                        parameters: PathParameters::AngleBracketed(AngleBracketedParameterData {
+                            lifetimes: vec![],
+                            bindings: vec![],
+                            types: vec![original_type.clone()],
+                        }),
+                    }],
                 },
             );
 
@@ -97,12 +93,10 @@ fn impl_build_query_input(
                 renamed_attributes.push(Attribute {
                     value: List(
                         "serde".into(),
-                        vec![
-                            MetaItem(NameValue(
-                                "rename".into(),
-                                format!(":{}", field.ident.clone().unwrap()).into(),
-                            )),
-                        ],
+                        vec![MetaItem(NameValue(
+                            "rename".into(),
+                            format!(":{}", field.ident.clone().unwrap()).into(),
+                        ))],
                     ),
                     style: AttrStyle::Outer,
                     is_sugared_doc: false,
