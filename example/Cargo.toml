@@ -9,7 +9,7 @@ serde_derive = "*"
 serde_dynamodb = { git = "https://github.com/mockersf/serde_dynamodb" }
 serde_dynamodb_derive = { git = "https://github.com/mockersf/serde_dynamodb" }
 
-rusoto_core = "0.32"
+rusoto_core = "0.33"
 rusoto_dynamodb = "0.32"
 
 uuid = { version = "0.6", features = ["serde", "v4"] }
