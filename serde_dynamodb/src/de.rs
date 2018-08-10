@@ -100,16 +100,18 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
     where
         V: serde::de::Visitor<'de>,
     {
-        visitor.visit_bool(self.read
-            .get_attribute_value(&self.current_field)
-            .ok_or_else(|| Error {
-                message: "Missing field".to_owned(),
-            })?
-            .clone()
-            .bool
-            .ok_or_else(|| Error {
-                message: "Invalid type".to_owned(),
-            })?)
+        visitor.visit_bool(
+            self.read
+                .get_attribute_value(&self.current_field)
+                .ok_or_else(|| Error {
+                    message: "Missing field".to_owned(),
+                })?
+                .clone()
+                .bool
+                .ok_or_else(|| Error {
+                    message: "Invalid type".to_owned(),
+                })?,
+        )
     }
 
     impl_deserialize_n!(i8, deserialize_i8, visit_i8);
@@ -129,20 +131,22 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
     where
         V: serde::de::Visitor<'de>,
     {
-        visitor.visit_char(self.read
-            .get_attribute_value(&self.current_field)
-            .ok_or_else(|| Error {
-                message: format!("missing char for field {:?}", &self.current_field),
-            })?
-            .clone()
-            .s
-            .ok_or_else(|| Error {
-                message: format!("missing char for field {:?}", &self.current_field),
-            })?
-            .parse::<char>()
-            .map_err(|_| Error {
-                message: "Invalid type".to_owned(),
-            })?)
+        visitor.visit_char(
+            self.read
+                .get_attribute_value(&self.current_field)
+                .ok_or_else(|| Error {
+                    message: format!("missing char for field {:?}", &self.current_field),
+                })?
+                .clone()
+                .s
+                .ok_or_else(|| Error {
+                    message: format!("missing char for field {:?}", &self.current_field),
+                })?
+                .parse::<char>()
+                .map_err(|_| Error {
+                    message: "Invalid type".to_owned(),
+                })?,
+        )
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>
@@ -190,7 +194,8 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         if self.read.get_attribute_value(&self.current_field).is_none() {
             return visitor.visit_none();
         }
-        match self.read
+        match self
+            .read
             .get_attribute_value(&self.current_field)
             .ok_or_else(|| Error {
                 message: format!("missing option for field {:?}", &self.current_field),
@@ -227,7 +232,8 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
     where
         V: serde::de::Visitor<'de>,
     {
-        let list = self.read
+        let list = self
+            .read
             .get_attribute_value(&self.current_field)
             .ok_or_else(|| Error {
                 message: format!("missing sequence for field {:?}", &self.current_field),
@@ -302,7 +308,8 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         match self.current_field {
             Index::None => visitor.visit_map(MapAccess::new(self, fields)),
             _ => {
-                let map = self.read
+                let map = self
+                    .read
                     .get_attribute_value(&self.current_field)
                     .ok_or_else(|| Error {
                         message: format!("missing struct for field {:?}", &self.current_field),
@@ -368,7 +375,8 @@ impl<'de, 'a, R: Read + 'a> serde::de::SeqAccess<'de> for SeqAccess<'a, R> {
     {
         self.de.current_field = Index::Number(self.current);
         self.current += 1;
-        if self.de
+        if self
+            .de
             .read
             .get_attribute_value(&self.de.current_field)
             .is_none()
