@@ -23,7 +23,7 @@ struct Task {
 }
 
 fn main() {
-    let client = DynamoDbClient::simple(Region::UsEast1);
+    let client = DynamoDbClient::new(Region::UsEast1);
 
     let task = Task {
         id: String::from("Entry ID"),
@@ -42,7 +42,7 @@ fn main() {
     };
 
     let _my_tasks: Vec<Task> = client
-        .query(&task_query_input.to_query_input(String::from("tableName")))
+        .query(task_query_input.to_query_input(String::from("tableName")))
         .sync()
         .unwrap()
         .items
