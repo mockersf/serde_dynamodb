@@ -12,4 +12,4 @@ serde_dynamodb_derive = { git = "https://github.com/mockersf/serde_dynamodb" }
 rusoto_core = "0.33"
 rusoto_dynamodb = "0.33"
 
-uuid = { version = "0.6", features = ["serde", "v4"] }
+uuid = { version = "0.7", features = ["serde", "v4"] }
