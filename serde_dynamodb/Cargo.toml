@@ -19,5 +19,5 @@ rusoto_dynamodb = "0.33"
 
 [dev-dependencies]
 serde_derive = "1.0"
-rusoto_core = "0.33"
+rusoto_core = "0.34"
 rusoto_dynamodb = "0.33"
