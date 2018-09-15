@@ -105,8 +105,7 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
                 .get_attribute_value(&self.current_field)
                 .ok_or_else(|| Error {
                     message: "Missing field".to_owned(),
-                })?
-                .clone()
+                })?.clone()
                 .bool
                 .ok_or_else(|| Error {
                     message: "Invalid type".to_owned(),
@@ -136,13 +135,11 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
                 .get_attribute_value(&self.current_field)
                 .ok_or_else(|| Error {
                     message: format!("missing char for field {:?}", &self.current_field),
-                })?
-                .clone()
+                })?.clone()
                 .s
                 .ok_or_else(|| Error {
                     message: format!("missing char for field {:?}", &self.current_field),
-                })?
-                .parse::<char>()
+                })?.parse::<char>()
                 .map_err(|_| Error {
                     message: "Invalid type".to_owned(),
                 })?,
@@ -159,8 +156,7 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
                 .s
                 .ok_or_else(|| Error {
                     message: format!("missing string for field {:?}", &self.current_field),
-                })
-                .and_then(|string_field| visitor.visit_str(&string_field))
+                }).and_then(|string_field| visitor.visit_str(&string_field))
         } else {
             visitor.visit_str("")
         }
@@ -199,8 +195,7 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
             .get_attribute_value(&self.current_field)
             .ok_or_else(|| Error {
                 message: format!("missing option for field {:?}", &self.current_field),
-            })?
-            .null
+            })?.null
         {
             Some(true) => visitor.visit_none(),
             _ => visitor.visit_some(self),
@@ -237,8 +232,7 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
             .get_attribute_value(&self.current_field)
             .ok_or_else(|| Error {
                 message: format!("missing sequence for field {:?}", &self.current_field),
-            })?
-            .clone();
+            })?.clone();
         let read = if let Some(alist) = list.l {
             VecRead { vec: alist }
         } else if let Some(numlist) = list.ns {
@@ -248,8 +242,7 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
                     .map(|n| AttributeValue {
                         n: Some(n),
                         ..Default::default()
-                    })
-                    .collect(),
+                    }).collect(),
             }
         } else if let Some(slist) = list.ss {
             VecRead {
@@ -258,8 +251,7 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
                     .map(|s| AttributeValue {
                         s: Some(s),
                         ..Default::default()
-                    })
-                    .collect(),
+                    }).collect(),
             }
         } else {
             return Err(Error {
