@@ -39,18 +39,18 @@ enum Index {
 trait Read {
     fn get_attribute_value(&self, index: &Index) -> Option<&AttributeValue>;
 }
-struct HashMapRead {
-    hashmap: HashMap<String, AttributeValue>,
+struct HashMapRead<S: ::std::hash::BuildHasher> {
+    hashmap: HashMap<String, AttributeValue, S>,
 }
-impl HashMapRead {
-    fn new(hm: HashMap<String, AttributeValue>) -> Self {
+impl<S: ::std::hash::BuildHasher> HashMapRead<S> {
+    fn new(hm: HashMap<String, AttributeValue, S>) -> Self {
         HashMapRead { hashmap: hm }
     }
 }
-impl Read for HashMapRead {
+impl<S: ::std::hash::BuildHasher> Read for HashMapRead<S> {
     fn get_attribute_value(&self, index: &Index) -> Option<&AttributeValue> {
-        match index {
-            &Index::String(ref key) => self.hashmap.get(key),
+        match *index {
+            Index::String(ref key) => self.hashmap.get(key),
             _ => None,
         }
     }
@@ -62,8 +62,8 @@ struct VecRead {
 
 impl Read for VecRead {
     fn get_attribute_value(&self, index: &Index) -> Option<&AttributeValue> {
-        match index {
-            &Index::Number(key) => self.vec.get(key),
+        match *index {
+            Index::Number(key) => self.vec.get(key),
             _ => None,
         }
     }
@@ -80,7 +80,7 @@ where
 {
     pub fn new(read: R) -> Self {
         Deserializer {
-            read: read,
+            read,
             current_field: Index::None,
         }
     }
@@ -153,7 +153,7 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
     where
         V: serde::de::Visitor<'de>,
     {
-        if let Some(field) = self.read.get_attribute_value(&self.current_field).clone() {
+        if let Some(field) = self.read.get_attribute_value(&self.current_field) {
             field
                 .clone()
                 .s
@@ -339,8 +339,8 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
     where
         V: serde::de::Visitor<'de>,
     {
-        match &self.current_field {
-            &Index::String(ref value) => visitor.visit_str(&value.clone()),
+        match self.current_field {
+            Index::String(ref value) => visitor.visit_str(&value.clone()),
             _ => Err(Error {
                 message: "indentifier should be a string".to_string(),
             }),
@@ -362,7 +362,7 @@ struct SeqAccess<'a, R: 'a> {
 
 impl<'a, R: 'a> SeqAccess<'a, R> {
     fn new(de: &'a mut Deserializer<R>) -> Self {
-        SeqAccess { de: de, current: 0 }
+        SeqAccess { de, current: 0 }
     }
 }
 
@@ -396,8 +396,8 @@ struct MapAccess<'a, R: 'a> {
 impl<'a, R: 'a> MapAccess<'a, R> {
     fn new(de: &'a mut Deserializer<R>, keys: &'static [&'static str]) -> Self {
         MapAccess {
-            de: de,
-            keys: keys,
+            de,
+            keys,
             current: 0,
         }
     }
@@ -449,7 +449,9 @@ where
 /// is wrong with the data, for example required struct fields are missing from
 /// the JSON map or some number is too big to fit in the expected primitive
 /// type.
-pub fn from_hashmap<'a, T>(hm: HashMap<String, AttributeValue>) -> Result<T>
+pub fn from_hashmap<'a, T, S: ::std::hash::BuildHasher>(
+    hm: HashMap<String, AttributeValue, S>,
+) -> Result<T>
 where
     T: serde::de::Deserialize<'a>,
 {

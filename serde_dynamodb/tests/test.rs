@@ -84,7 +84,7 @@ fn can_deserialize_struct() {
             ..Default::default()
         },
     );
-    let res = serde_dynamodb::from_hashmap::<Basic>(value);
+    let res: serde_dynamodb::error::Result<Basic> = serde_dynamodb::from_hashmap(value);
     assert!(res.is_ok());
 }
 
@@ -125,7 +125,7 @@ fn can_go_back_and_forth() {
         complex: vec![None, Some(Internal { k: 10, f: 12.56 })],
     };
     let hm = serde_dynamodb::to_hashmap(&value).unwrap();
-    let out = serde_dynamodb::from_hashmap::<Basic>(hm).unwrap();
+    let out: Basic = serde_dynamodb::from_hashmap(hm).unwrap();
     assert_eq!(value, out);
 }
 
@@ -168,7 +168,7 @@ fn can_deserialize_hashset() {
         },
     );
 
-    let foo = serde_dynamodb::from_hashmap::<Foo>(value).unwrap();
+    let foo: Foo = serde_dynamodb::from_hashmap(value).unwrap();
     let mut expected = HashSet::new();
     expected.insert("foo".to_owned());
     expected.insert("bar".to_owned());

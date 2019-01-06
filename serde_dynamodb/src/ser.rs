@@ -67,7 +67,7 @@ where
     W: WriterTrait,
 {
     pub fn new(writer: W) -> Self {
-        Serializer { writer: writer }
+        Serializer { writer }
     }
 
     fn reject_non_struct_root(&mut self, write: &mut FnMut(&mut W) -> Result<()>) -> Result<()> {
