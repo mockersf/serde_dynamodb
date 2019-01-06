@@ -55,14 +55,16 @@ fn impl_build_query_input(
                                         MetaItem(NameValue("rename".into(), new_rename.into()))
                                     }
                                     other => other,
-                                }).collect();
+                                })
+                                .collect();
                             if new_items
                                 .iter()
                                 .cloned()
                                 .filter(|meta_item| match *meta_item {
                                     MetaItem(NameValue(ref name, _)) if name == "rename" => true,
                                     _ => false,
-                                }).count()
+                                })
+                                .count()
                                 == 0
                             {
                                 new_items.push(MetaItem(NameValue(
@@ -78,14 +80,16 @@ fn impl_build_query_input(
                         value: new_value,
                         ..meta_items.clone()
                     }
-                }).collect();
+                })
+                .collect();
             if renamed_attributes
                 .iter()
                 .cloned()
                 .filter(|meta_items| match meta_items.value {
                     List(ref name, _) if name == "serde" => true,
                     _ => false,
-                }).count()
+                })
+                .count()
                 == 0
             {
                 renamed_attributes.push(Attribute {
@@ -105,7 +109,8 @@ fn impl_build_query_input(
             optional_field.ty = optional_type;
             optional_field.attrs = renamed_attributes;
             optional_field
-        }).collect();
+        })
+        .collect();
 
     let fields_as_conditions: Vec<quote::Tokens> = variant_data
         .fields()
@@ -139,7 +144,8 @@ fn impl_build_query_input(
                     None => None,
                 }
             }
-        }).collect();
+        })
+        .collect();
 
     let query_input_name = Ident::from(format!("{}QueryInput", name));
     quote! {
@@ -182,7 +188,8 @@ fn get_type_params(ty_params: &[TyParam]) -> Vec<quote::Tokens> {
             quote! {
                 #type_ident,
             }
-        }).collect()
+        })
+        .collect()
 }
 
 fn get_string_from_lit(attr_name: &str, lit: &syn::Lit) -> String {
