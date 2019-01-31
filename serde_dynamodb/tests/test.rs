@@ -6,7 +6,12 @@ extern crate serde_derive;
 extern crate serde_dynamodb;
 
 use rusoto_dynamodb::AttributeValue;
+use serde::de::{MapAccess, Visitor};
+use serde::ser::{Serialize, Serializer};
+use serde::ser::SerializeStruct;
+use serde::{Deserialize, Deserializer};
 use std::collections::{HashMap, HashSet};
+use std::fmt;
 
 #[test]
 fn cant_serialize_non_struct() {
@@ -143,6 +148,87 @@ fn can_serialize_struct_leveled() {
         intern: Internal { i: 5 },
     };
     assert!(serde_dynamodb::to_hashmap(&value).is_ok())
+}
+
+#[test]
+fn can_create_struct_custom_serialization() {
+
+    #[derive(Debug)]
+    struct Point {
+        x_y: u8,
+    }
+
+    impl Point {
+
+        fn from_coor(x: u8, y: u8) -> Point {
+            Point {
+                x_y: x + y
+            }
+        }
+    }
+
+    impl Serialize for Point {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: Serializer,
+        {
+            let mut state = serializer.serialize_struct("Point", 2)?;
+            let x = &self.x_y / 2 - 1;
+            let x_str = format!("{}", x);
+            let y = &self.x_y / 2 + 1;
+            let y_str = format!("{}", y);
+            state.serialize_field("x", &x_str);
+            state.serialize_field("y", &y_str);
+            state.end()
+        }
+    }
+
+    impl<'de> Deserialize<'de> for Point {
+        fn deserialize<D>(deserializer: D) -> Result<Point, D::Error>
+            where
+                D: Deserializer<'de>,
+        {
+            let fields = &["x", "y"];
+            deserializer.deserialize_struct("Point", fields,PointVisitor)
+        }
+    }
+
+    struct PointVisitor;
+
+    impl<'de> Visitor<'de> for PointVisitor {
+        type Value = Point;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("Point")
+        }
+
+        fn visit_map<E: MapAccess<'de>>(self, mut map: E) -> Result<Point, E::Error> {
+            let mut x = String::new();
+            let mut y = String::new();
+
+            while let Some(ref key) = map.next_key::<String>()? {
+                let v = map.next_value::<String>()?;
+                if key == "x" {
+                    x = String::from(v)
+                } else if key == "y" {
+                    y = String::from(v)
+                } else {
+                    panic!("Serialization failed!")
+                }
+            }
+            let num_x: u8 = x.parse::<u8>().unwrap();
+            let num_y: u8 = y.parse::<u8>().unwrap();
+            Ok(Point::from_coor(num_x, num_y))
+        }
+    }
+
+    let value = Point {
+        x_y: 100
+    };
+
+    let hm = serde_dynamodb::to_hashmap(&value).unwrap();
+    let point_result: std::result::Result<Point, serde_dynamodb::Error> = serde_dynamodb::from_hashmap(hm);
+    assert!(point_result.is_ok())
 }
 
 #[test]

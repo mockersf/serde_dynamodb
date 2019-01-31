@@ -73,6 +73,7 @@ impl Read for VecRead {
 struct Deserializer<R> {
     read: R,
     current_field: Index,
+    as_key: bool,
 }
 impl<'de, R> Deserializer<R>
 where
@@ -82,6 +83,7 @@ where
         Deserializer {
             read,
             current_field: Index::None,
+            as_key: false,
         }
     }
 }
@@ -153,16 +155,27 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
     where
         V: serde::de::Visitor<'de>,
     {
-        if let Some(field) = self.read.get_attribute_value(&self.current_field) {
-            field
-                .clone()
-                .s
-                .ok_or_else(|| Error {
-                    message: format!("missing string for field {:?}", &self.current_field),
-                })
-                .and_then(|string_field| visitor.visit_str(&string_field))
+        if self.as_key {
+            match &self.current_field {
+                Index::String(ref key) => visitor.visit_str(key),
+                _ => {
+                    visitor.visit_str("")
+                }
+            }
         } else {
-            visitor.visit_str("")
+            if let Some(field) = self.read.get_attribute_value(&self.current_field) {
+                field
+                    .clone()
+                    .s
+                    .ok_or_else(|| Error {
+                        message: format!("missing string for field {:?}", &self.current_field)
+                    })
+                    .and_then(|string_field| {
+                        visitor.visit_str(&string_field)
+                    })
+            } else {
+                visitor.visit_str("")
+            }
         }
     }
 
@@ -414,6 +427,7 @@ impl<'de, 'a, R: Read + 'a> serde::de::MapAccess<'de> for MapAccess<'a, R> {
             Ok(None)
         } else {
             self.de.current_field = Index::String(self.keys[self.current].to_string());
+            self.de.as_key = true;
             self.current += 1;
             seed.deserialize(&mut *self.de).map(Some)
         }
@@ -423,6 +437,7 @@ impl<'de, 'a, R: Read + 'a> serde::de::MapAccess<'de> for MapAccess<'a, R> {
     where
         V: serde::de::DeserializeSeed<'de>,
     {
+        self.de.as_key = false;
         seed.deserialize(&mut *self.de)
     }
 }
