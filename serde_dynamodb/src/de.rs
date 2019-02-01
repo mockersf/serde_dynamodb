@@ -158,24 +158,18 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         if self.as_key {
             match &self.current_field {
                 Index::String(ref key) => visitor.visit_str(key),
-                _ => {
-                    visitor.visit_str("")
-                }
+                _ => visitor.visit_str(""),
             }
+        } else if let Some(field) = self.read.get_attribute_value(&self.current_field) {
+            field
+                .clone()
+                .s
+                .ok_or_else(|| Error {
+                    message: format!("missing string for field {:?}", &self.current_field),
+                })
+                .and_then(|string_field| visitor.visit_str(&string_field))
         } else {
-            if let Some(field) = self.read.get_attribute_value(&self.current_field) {
-                field
-                    .clone()
-                    .s
-                    .ok_or_else(|| Error {
-                        message: format!("missing string for field {:?}", &self.current_field)
-                    })
-                    .and_then(|string_field| {
-                        visitor.visit_str(&string_field)
-                    })
-            } else {
-                visitor.visit_str("")
-            }
+            visitor.visit_str("")
         }
     }
 

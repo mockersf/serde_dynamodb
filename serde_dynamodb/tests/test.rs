@@ -7,8 +7,8 @@ extern crate serde_dynamodb;
 
 use rusoto_dynamodb::AttributeValue;
 use serde::de::{MapAccess, Visitor};
-use serde::ser::{Serialize, Serializer};
 use serde::ser::SerializeStruct;
+use serde::ser::{Serialize, Serializer};
 use serde::{Deserialize, Deserializer};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
@@ -152,25 +152,21 @@ fn can_serialize_struct_leveled() {
 
 #[test]
 fn can_create_struct_custom_serialization() {
-
     #[derive(Debug)]
     struct Point {
         x_y: u8,
     }
 
     impl Point {
-
         fn from_coor(x: u8, y: u8) -> Point {
-            Point {
-                x_y: x + y
-            }
+            Point { x_y: x + y }
         }
     }
 
     impl Serialize for Point {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: Serializer,
+        where
+            S: Serializer,
         {
             let mut state = serializer.serialize_struct("Point", 2)?;
             let x = &self.x_y / 2 - 1;
@@ -185,11 +181,11 @@ fn can_create_struct_custom_serialization() {
 
     impl<'de> Deserialize<'de> for Point {
         fn deserialize<D>(deserializer: D) -> Result<Point, D::Error>
-            where
-                D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
         {
             let fields = &["x", "y"];
-            deserializer.deserialize_struct("Point", fields,PointVisitor)
+            deserializer.deserialize_struct("Point", fields, PointVisitor)
         }
     }
 
@@ -222,12 +218,11 @@ fn can_create_struct_custom_serialization() {
         }
     }
 
-    let value = Point {
-        x_y: 100
-    };
+    let value = Point { x_y: 100 };
 
     let hm = serde_dynamodb::to_hashmap(&value).unwrap();
-    let point_result: std::result::Result<Point, serde_dynamodb::Error> = serde_dynamodb::from_hashmap(hm);
+    let point_result: std::result::Result<Point, serde_dynamodb::Error> =
+        serde_dynamodb::from_hashmap(hm);
     assert!(point_result.is_ok())
 }
 
