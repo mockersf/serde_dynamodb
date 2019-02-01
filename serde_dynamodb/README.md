@@ -4,7 +4,7 @@ Library to de/serialize an object to an `HashMap` of `AttributeValue`s used by [
 
 ```toml
 [dependencies]
-serde_dynamodb = "0.2.0"
+serde_dynamodb = "0.2.1"
 ```
 
 ## Example

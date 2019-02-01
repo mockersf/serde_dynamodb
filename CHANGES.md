@@ -1,5 +1,10 @@
 # Changes
 
+# 0.2.1
+
+* fix bug for struct with custom serialization
+* update dependencies
+
 # 0.2
 
 * update dependencies
