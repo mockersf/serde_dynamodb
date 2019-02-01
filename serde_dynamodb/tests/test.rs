@@ -164,6 +164,7 @@ fn can_create_struct_custom_serialization() {
     }
 
     impl Serialize for Point {
+        #[allow(unused_must_use)]
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
