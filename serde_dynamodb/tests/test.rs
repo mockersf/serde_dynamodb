@@ -101,6 +101,8 @@ fn can_go_back_and_forth() {
         f: f64,
     }
     #[derive(Deserialize, Serialize, Debug, PartialEq)]
+    struct Unit;
+    #[derive(Deserialize, Serialize, Debug, PartialEq)]
     struct Basic {
         i: i32,
         j: i32,
@@ -114,6 +116,8 @@ fn can_go_back_and_forth() {
         some: Option<Internal>,
         none: Option<Internal>,
         complex: Vec<Option<Internal>>,
+        unit: (),
+        unit_struct: Unit,
     }
     let value = Basic {
         i: 18,
@@ -128,6 +132,8 @@ fn can_go_back_and_forth() {
         some: Some(Internal { k: 120, f: 144.304 }),
         none: None,
         complex: vec![None, Some(Internal { k: 10, f: 12.56 })],
+        unit: (),
+        unit_struct: Unit,
     };
     let hm = serde_dynamodb::to_hashmap(&value).unwrap();
     let out: Basic = serde_dynamodb::from_hashmap(hm).unwrap();

@@ -214,18 +214,27 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         }
     }
 
-    fn deserialize_unit<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        self.read
+            .get_attribute_value(&self.current_field)
+            .ok_or_else(|| Error {
+                message: "Missing field".to_owned(),
+            })?
+            .null
+            .ok_or_else(|| Error {
+                message: format!("Missing null for field {:?}", &self.current_field),
+            })
+            .and_then(|_| visitor.visit_unit())
     }
 
-    fn deserialize_unit_struct<V>(self, _name: &'static str, _visitor: V) -> Result<V::Value>
+    fn deserialize_unit_struct<V>(self, _name: &'static str, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        self.deserialize_unit(visitor)
     }
 
     fn deserialize_newtype_struct<V>(self, _name: &str, visitor: V) -> Result<V::Value>
