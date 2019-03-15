@@ -202,7 +202,7 @@ fn get_string_from_lit(attr_name: &str, lit: &syn::Lit) -> String {
 
 fn get_meta_items_from(domain: &str, attr: &syn::Attribute) -> Option<Vec<syn::NestedMetaItem>> {
     match attr.value {
-        List(ref name, ref items) if name == domain => Some(items.iter().cloned().collect()),
+        List(ref name, ref items) if name == domain => Some(items.to_vec()),
         _ => None,
     }
 }

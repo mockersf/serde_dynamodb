@@ -139,11 +139,17 @@ where
     }
 
     fn serialize_unit(self) -> Result<()> {
-        self.reject_non_struct_root(&mut move |_writer: &mut W| Ok(()))
+        self.reject_non_struct_root(&mut move |writer: &mut W| {
+            writer.insert_value(AttributeValue {
+                null: Some(true),
+                ..Default::default()
+            });
+            Ok(())
+        })
     }
 
     fn serialize_unit_struct(self, _name: &'static str) -> Result<()> {
-        unimplemented!()
+        self.serialize_unit()
     }
 
     fn serialize_unit_variant(
