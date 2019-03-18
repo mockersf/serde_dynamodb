@@ -19,7 +19,7 @@ rusoto_dynamodb = { version = "0.36", default-features = false }
 
 [dev-dependencies]
 serde_derive = "1.0"
-rusoto_core = "0.36"
+rusoto_core = "0.37"
 rusoto_dynamodb = "0.36"
 
 [features]
