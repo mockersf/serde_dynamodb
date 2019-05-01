@@ -177,6 +177,14 @@ pub use dynamodb::de::from_hashmap;
 #[cfg(feature = "rusoto_dynamodb")]
 pub use dynamodb::ser::to_hashmap;
 
+#[cfg(feature = "rusoto_dynamodbstreams")]
+mod dynamodbstreams;
+#[cfg(feature = "rusoto_dynamodbstreams")]
+pub use dynamodbstreams::de::from_hashmap as from_hashmap_streams;
+#[cfg(feature = "rusoto_dynamodbstreams")]
+pub use dynamodbstreams::ser::to_hashmap as to_hashmap_streams;
+
+
 /// A data structure that can be used as a DynamoDB `QueryInput`
 #[cfg(feature = "rusoto_dynamodb")]
 pub trait ToQueryInput {
