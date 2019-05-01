@@ -171,13 +171,11 @@ pub mod error;
 pub use error::Error;
 
 #[cfg(feature = "rusoto_dynamodb")]
-mod de;
+mod dynamodb;
 #[cfg(feature = "rusoto_dynamodb")]
-mod ser;
+pub use dynamodb::de::from_hashmap;
 #[cfg(feature = "rusoto_dynamodb")]
-pub use de::from_hashmap;
-#[cfg(feature = "rusoto_dynamodb")]
-pub use ser::to_hashmap;
+pub use dynamodb::ser::to_hashmap;
 
 /// A data structure that can be used as a DynamoDB `QueryInput`
 #[cfg(feature = "rusoto_dynamodb")]
