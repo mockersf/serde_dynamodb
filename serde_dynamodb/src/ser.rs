@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use rusoto_dynamodb::AttributeValue;
 use serde;
 
-use error::{Error, Result};
+use crate::error::{Error, Result};
 
 macro_rules! impl_serialize_n {
     ($type:ty, $method:ident) => {
@@ -165,7 +165,7 @@ where
     where
         T: serde::ser::Serialize,
     {
-        try!(value.serialize(self));
+        value.serialize(self)?;
         Ok(())
     }
 
@@ -407,7 +407,7 @@ where
     {
         if self.is_root {
             self.ser.writer.set_key(key.to_string());
-            try!(value.serialize(&mut *self.ser));
+            value.serialize(&mut *self.ser)?;
             Ok(())
         } else {
             (&mut self.current).set_key(key.to_string());
@@ -450,7 +450,7 @@ where
     T: serde::ser::Serialize,
 {
     let mut ser = Serializer::new(writer);
-    try!(value.serialize(&mut ser));
+    value.serialize(&mut ser)?;
     Ok(())
 }
 
@@ -468,6 +468,6 @@ where
         root: HashMap::new(),
         current_key: String::new(),
     };
-    try!(to_writer(&mut writer, value));
+    to_writer(&mut writer, value)?;
     Ok(writer.root)
 }

@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use rusoto_dynamodb::AttributeValue;
 use serde;
 
-use error::{Error, Result};
+use crate::error::{Error, Result};
 
 macro_rules! impl_deserialize_n {
     ($type:ty, $method:ident, $visit:ident) => {
@@ -451,7 +451,7 @@ where
     T: serde::de::Deserialize<'de>,
 {
     let mut de = Deserializer::new(read);
-    let value = try!(serde::de::Deserialize::deserialize(&mut de));
+    let value = serde::de::Deserialize::deserialize(&mut de)?;
 
     Ok(value)
 }

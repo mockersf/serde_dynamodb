@@ -9,6 +9,7 @@ documentation = "https://docs.rs/serde_dynamodb"
 keywords = ["serde", "dynamodb", "rusoto"]
 license = "MIT"
 readme = "README.md"
+edition = "2018"
 
 [badges]
 travis-ci = { repository = "mockersf/serde_dynamodb" }

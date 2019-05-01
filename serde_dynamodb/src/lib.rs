@@ -172,9 +172,6 @@
 //! [from_hashmap]: fn.from_hashmap.html
 //!
 
-extern crate rusoto_dynamodb;
-extern crate serde;
-
 mod de;
 mod ser;
 
