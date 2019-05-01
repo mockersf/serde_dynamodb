@@ -1,15 +1,9 @@
-extern crate rusoto_dynamodb;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-
-extern crate serde_dynamodb;
+#![cfg(feature = "rusoto_dynamodb")]
 
 use rusoto_dynamodb::AttributeValue;
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeStruct;
-use serde::ser::{Serialize, Serializer};
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 

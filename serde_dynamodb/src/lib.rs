@@ -128,15 +128,7 @@
 //! [`serde_dynamodb::to_hashmap`][to_hashmap].
 //!
 //! ```rust
-//! extern crate serde;
-//! extern crate serde_dynamodb;
-//!
-//! extern crate rusoto_core;
-//! extern crate rusoto_dynamodb;
-//!
-//! #[macro_use]
-//! extern crate serde_derive;
-//!
+//! use serde::{Serialize, Deserialize};
 //! use serde_dynamodb::Error;
 //!
 //! #[derive(Serialize, Deserialize, Debug)]
@@ -145,6 +137,7 @@
 //!     city: String,
 //! }
 //!
+//! # #[cfg(feature = "rusoto_dynamodb")]
 //! fn print_an_address() -> Result<(), Error> {
 //!     // Some data structure.
 //!     let address = Address {
@@ -153,15 +146,16 @@
 //!     };
 //!
 //!     // Serialize it to an HashMap.
-//!     let j = serde_dynamodb::to_hashmap(&address)?;
+//!     let dynamodb_object = serde_dynamodb::to_hashmap(&address)?;
 //!
 //!     // Print, write to a file, or send to an HTTP server.
-//!     println!("{:?}", j);
+//!     println!("{:?}", dynamodb_object);
 //!
 //!     Ok(())
 //! }
 //! #
 //! # fn main() {
+//! #     #[cfg(feature = "rusoto_dynamodb")]
 //! #     print_an_address().unwrap();
 //! # }
 //! ```
@@ -172,16 +166,21 @@
 //! [from_hashmap]: fn.from_hashmap.html
 //!
 
-mod de;
-mod ser;
-
 pub mod error;
 
-pub use de::from_hashmap;
 pub use error::Error;
+
+#[cfg(feature = "rusoto_dynamodb")]
+mod de;
+#[cfg(feature = "rusoto_dynamodb")]
+mod ser;
+#[cfg(feature = "rusoto_dynamodb")]
+pub use de::from_hashmap;
+#[cfg(feature = "rusoto_dynamodb")]
 pub use ser::to_hashmap;
 
 /// A data structure that can be used as a DynamoDB `QueryInput`
+#[cfg(feature = "rusoto_dynamodb")]
 pub trait ToQueryInput {
     /// Transform this structure as a DynamoDB `QueryInput` on the given `table`
     fn to_query_input(&self, table: String) -> rusoto_dynamodb::QueryInput;
