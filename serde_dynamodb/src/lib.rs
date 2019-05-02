@@ -161,21 +161,21 @@
 //! ```
 //!
 //! # Features
-//! 
+//!
 //! ## rusoto_dynamodb
-//! 
+//!
 //! Feature `rusoto_dynamodb` is enabled by default and add methods
 //! [`serde_dynamodb::from_hashmap`][from_hashmap] and
 //! [`serde_dynamodb::to_hashmap`][to_hashmap]. Those methods work with
 //! [`AttributeValue`][dynamodb_attribute] from [DynamoDB][dynamodb].
-//! 
+//!
 //! ## rusoto_dynamodbstreams
-//! 
+//!
 //! Feature `rusoto_dynamodbstreams` is disabled by default and add methods
 //! [`serde_dynamodb::from_hashmap_streams`][from_hashmap_streams] and
 //! [`serde_dynamodb::to_hashmap_streams`][to_hashmap_streams]. Those methods work with
 //! [`AttributeValue`][dynamodbstreams_attribute] from [DynamoDB Streams][dynamodbstreams].
-//! 
+//!
 //! [aws_doc]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.LowLevelAPI.html#Programming.LowLevelAPI.DataTypeDescriptors
 //! [dynamodb]: https://rusoto.github.io/rusoto/rusoto_dynamodb/index.html
 //! [dynamodb_attribute]: https://rusoto.github.io/rusoto/rusoto_dynamodb/struct.AttributeValue.html
