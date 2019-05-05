@@ -207,7 +207,7 @@ pub mod streams {
     //! Methods in this module are generated to work with
     //! [`AttributeValue`][dynamodbstreams_attribute] from [DynamoDB Streams][dynamodbstreams]
     //! instead of [`AttributeValue`][dynamodb_attribute] from [DynamoDB][dynamodb].
-    //! 
+    //!
     //! [dynamodb]: https://rusoto.github.io/rusoto/rusoto_dynamodb/index.html
     //! [dynamodb_attribute]: https://rusoto.github.io/rusoto/rusoto_dynamodb/struct.AttributeValue.html
     //! [dynamodbstreams]: https://rusoto.github.io/rusoto/rusoto_dynamodbstreams/index.html
