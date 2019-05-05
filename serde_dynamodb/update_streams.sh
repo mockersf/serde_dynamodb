@@ -12,8 +12,8 @@ cp tests/dynamodb.rs tests/dynamodbstreams.rs
 echo "Update to use dynamodbstreams"
 sed -e 's/rusoto_dynamodb/rusoto_dynamodbstreams/g' -i '' src/dynamodbstreams/*
 sed -e 's/rusoto_dynamodb/rusoto_dynamodbstreams/g' -i '' tests/dynamodbstreams.rs
-sed -e 's/serde_dynamodb::from_hashmap/serde_dynamodb::from_hashmap_streams'/g -i '' tests/dynamodbstreams.rs
-sed -e 's/serde_dynamodb::to_hashmap/serde_dynamodb::to_hashmap_streams'/g -i '' tests/dynamodbstreams.rs
+sed -e 's/serde_dynamodb::from_hashmap/serde_dynamodb::streams::from_hashmap'/g -i '' tests/dynamodbstreams.rs
+sed -e 's/serde_dynamodb::to_hashmap/serde_dynamodb::streams::to_hashmap'/g -i '' tests/dynamodbstreams.rs
 
 echo "Put notice on top of generated files"
 for file in src/dynamodbstreams/* tests/dynamodbstreams.rs

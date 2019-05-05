@@ -171,9 +171,10 @@
 //!
 //! ## rusoto_dynamodbstreams
 //!
-//! Feature `rusoto_dynamodbstreams` is disabled by default and add methods
-//! [`serde_dynamodb::from_hashmap_streams`][from_hashmap_streams] and
-//! [`serde_dynamodb::to_hashmap_streams`][to_hashmap_streams]. Those methods work with
+//! Feature `rusoto_dynamodbstreams` is disabled by default and add module
+//! [`streams`][streams] with methods
+//! [`serde_dynamodb::streams::from_hashmap`][from_hashmap_streams] and
+//! [`serde_dynamodb::streams::to_hashmap`][to_hashmap_streams]. Those methods work with
 //! [`AttributeValue`][dynamodbstreams_attribute] from [DynamoDB Streams][dynamodbstreams].
 //!
 //! [aws_doc]: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.LowLevelAPI.html#Programming.LowLevelAPI.DataTypeDescriptors
@@ -183,8 +184,9 @@
 //! [dynamodbstreams_attribute]: https://rusoto.github.io/rusoto/rusoto_dynamodbstreams/struct.AttributeValue.html
 //! [to_hashmap]: fn.to_hashmap.html
 //! [from_hashmap]: fn.from_hashmap.html
-//! [to_hashmap_streams]: fn.to_hashmap_streams.html
-//! [from_hashmap_streams]: fn.from_hashmap_streams.html
+//! [streams]: streams/index.html
+//! [to_hashmap_streams]: streams/fn.to_hashmap.html
+//! [from_hashmap_streams]: streams/fn.from_hashmap.html
 //!
 
 pub mod error;
@@ -201,9 +203,18 @@ pub use dynamodb::ser::to_hashmap;
 #[cfg(feature = "rusoto_dynamodbstreams")]
 mod dynamodbstreams;
 #[cfg(feature = "rusoto_dynamodbstreams")]
-pub use dynamodbstreams::de::from_hashmap as from_hashmap_streams;
-#[cfg(feature = "rusoto_dynamodbstreams")]
-pub use dynamodbstreams::ser::to_hashmap as to_hashmap_streams;
+pub mod streams {
+    //! Methods in this module are generated to work with
+    //! [`AttributeValue`][dynamodbstreams_attribute] from [DynamoDB Streams][dynamodbstreams]
+    //! instead of [`AttributeValue`][dynamodb_attribute] from [DynamoDB][dynamodb].
+    //! 
+    //! [dynamodb]: https://rusoto.github.io/rusoto/rusoto_dynamodb/index.html
+    //! [dynamodb_attribute]: https://rusoto.github.io/rusoto/rusoto_dynamodb/struct.AttributeValue.html
+    //! [dynamodbstreams]: https://rusoto.github.io/rusoto/rusoto_dynamodbstreams/index.html
+    //! [dynamodbstreams_attribute]: https://rusoto.github.io/rusoto/rusoto_dynamodbstreams/struct.AttributeValue.html
+    pub use crate::dynamodbstreams::de::from_hashmap;
+    pub use crate::dynamodbstreams::ser::to_hashmap;
+}
 
 /// A data structure that can be used as a DynamoDB `QueryInput`
 #[cfg(feature = "rusoto_dynamodb")]

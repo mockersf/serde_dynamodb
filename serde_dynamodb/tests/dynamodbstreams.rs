@@ -12,24 +12,24 @@ use std::fmt;
 #[test]
 fn cant_serialize_non_struct() {
     let number: u8 = 5;
-    assert!(serde_dynamodb::to_hashmap_streams(&number).is_err());
+    assert!(serde_dynamodb::streams::to_hashmap(&number).is_err());
     let number: u16 = 5;
-    assert!(serde_dynamodb::to_hashmap_streams(&number).is_err());
+    assert!(serde_dynamodb::streams::to_hashmap(&number).is_err());
     let number: u32 = 5;
-    assert!(serde_dynamodb::to_hashmap_streams(&number).is_err());
+    assert!(serde_dynamodb::streams::to_hashmap(&number).is_err());
     let number: u64 = 5;
-    assert!(serde_dynamodb::to_hashmap_streams(&number).is_err());
+    assert!(serde_dynamodb::streams::to_hashmap(&number).is_err());
 
     let number: f32 = 5.1;
-    assert!(serde_dynamodb::to_hashmap_streams(&number).is_err());
+    assert!(serde_dynamodb::streams::to_hashmap(&number).is_err());
     let number: f64 = 5.2;
-    assert!(serde_dynamodb::to_hashmap_streams(&number).is_err());
+    assert!(serde_dynamodb::streams::to_hashmap(&number).is_err());
 
     let none: Option<f64> = None;
-    assert!(serde_dynamodb::to_hashmap_streams(&none).is_err());
+    assert!(serde_dynamodb::streams::to_hashmap(&none).is_err());
 
     let some: Option<f64> = Some(13.54);
-    assert!(serde_dynamodb::to_hashmap_streams(&some).is_err());
+    assert!(serde_dynamodb::streams::to_hashmap(&some).is_err());
 }
 
 #[test]
@@ -40,7 +40,7 @@ fn can_serialize_struct() {
         f: f32,
     }
     let value = Basic { i: 5, f: 10.2 };
-    assert!(serde_dynamodb::to_hashmap_streams(&value).is_ok())
+    assert!(serde_dynamodb::streams::to_hashmap(&value).is_ok())
 }
 
 #[test]
@@ -85,7 +85,7 @@ fn can_deserialize_struct() {
             ..Default::default()
         },
     );
-    let res: serde_dynamodb::error::Result<Basic> = serde_dynamodb::from_hashmap_streams(value);
+    let res: serde_dynamodb::error::Result<Basic> = serde_dynamodb::streams::from_hashmap(value);
     assert!(res.is_ok());
 }
 
@@ -131,8 +131,8 @@ fn can_go_back_and_forth() {
         unit: (),
         unit_struct: Unit,
     };
-    let hm = serde_dynamodb::to_hashmap_streams(&value).unwrap();
-    let out: Basic = serde_dynamodb::from_hashmap_streams(hm).unwrap();
+    let hm = serde_dynamodb::streams::to_hashmap(&value).unwrap();
+    let out: Basic = serde_dynamodb::streams::from_hashmap(hm).unwrap();
     assert_eq!(value, out);
 }
 
@@ -149,7 +149,7 @@ fn can_serialize_struct_leveled() {
     let value = Basic {
         intern: Internal { i: 5 },
     };
-    assert!(serde_dynamodb::to_hashmap_streams(&value).is_ok())
+    assert!(serde_dynamodb::streams::to_hashmap(&value).is_ok())
 }
 
 #[test]
@@ -223,9 +223,9 @@ fn can_create_struct_custom_serialization() {
 
     let value = Point { x_y: 100 };
 
-    let hm = serde_dynamodb::to_hashmap_streams(&value).unwrap();
+    let hm = serde_dynamodb::streams::to_hashmap(&value).unwrap();
     let point_result: std::result::Result<Point, serde_dynamodb::Error> =
-        serde_dynamodb::from_hashmap_streams(hm);
+        serde_dynamodb::streams::from_hashmap(hm);
     assert!(point_result.is_ok())
 }
 
@@ -252,7 +252,7 @@ fn can_deserialize_hashset() {
         },
     );
 
-    let foo: Foo = serde_dynamodb::from_hashmap_streams(value).unwrap();
+    let foo: Foo = serde_dynamodb::streams::from_hashmap(value).unwrap();
     let mut expected = HashSet::new();
     expected.insert("foo".to_owned());
     expected.insert("bar".to_owned());
@@ -267,6 +267,6 @@ fn can_deserialize_hashset() {
 
 /*#[test]
 fn cant_serialize_array_of_non_struct() {
-    assert!(serde_dynamodb::to_hashmap_streams(&vec!(1, 2, 3)).is_err())
+    assert!(serde_dynamodb::streams::to_hashmap(&vec!(1, 2, 3)).is_err())
 }
 */
