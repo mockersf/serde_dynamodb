@@ -263,6 +263,50 @@ fn can_deserialize_hashset() {
     assert_eq!(foo.baz, expected);
 }
 
+#[test]
+fn can_be_missing_with_default() {
+    // example from https://serde.rs/attr-default.html
+    #[derive(Deserialize, Debug)]
+    struct Request {
+        #[serde(default = "default_resource")]
+        resource: String,
+        #[serde(default)]
+        timeout: Timeout,
+        #[serde(default = "Priority::lowest")]
+        priority: Priority,
+    }
+    fn default_resource() -> String {
+        "/".to_string()
+    }
+    #[derive(Deserialize, Debug, PartialEq)]
+    struct Timeout(u32);
+    impl Default for Timeout {
+        fn default() -> Self {
+            Timeout(30)
+        }
+    }
+    #[derive(Deserialize, Debug, PartialEq)]
+    enum Priority {
+        ExtraHigh,
+        High,
+        Normal,
+        Low,
+        ExtraLow,
+    }
+    impl Priority {
+        fn lowest() -> Self {
+            Priority::ExtraLow
+        }
+    }
+
+    let value: HashMap<String, AttributeValue> = HashMap::new();
+
+    let request: Request = serde_dynamodb::from_hashmap(value).unwrap();
+    assert_eq!(request.resource, "/");
+    assert_eq!(request.timeout, Timeout(30));
+    assert_eq!(request.priority, Priority::ExtraLow);
+}
+
 /*#[test]
 fn cant_serialize_array_of_non_struct() {
     assert!(serde_dynamodb::to_hashmap(&vec!(1, 2, 3)).is_err())

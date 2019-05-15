@@ -38,6 +38,7 @@ enum Index {
 
 trait Read {
     fn get_attribute_value(&self, index: &Index) -> Option<&AttributeValue>;
+    fn get_keys(&self) -> Vec<String>;
 }
 struct HashMapRead<S: ::std::hash::BuildHasher> {
     hashmap: HashMap<String, AttributeValue, S>,
@@ -54,6 +55,9 @@ impl<S: ::std::hash::BuildHasher> Read for HashMapRead<S> {
             _ => None,
         }
     }
+    fn get_keys(&self) -> Vec<String> {
+        self.hashmap.keys().cloned().collect()
+    }
 }
 
 struct VecRead {
@@ -66,6 +70,9 @@ impl Read for VecRead {
             Index::Number(key) => self.vec.get(key),
             _ => None,
         }
+    }
+    fn get_keys(&self) -> Vec<String> {
+        return vec![];
     }
 }
 
@@ -315,14 +322,14 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
     fn deserialize_struct<V>(
         self,
         _name: &'static str,
-        fields: &'static [&'static str],
+        _fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
         match self.current_field {
-            Index::None => visitor.visit_map(MapAccess::new(self, fields)),
+            Index::None => visitor.visit_map(MapAccess::new(self, self.read.get_keys())),
             _ => {
                 let map = self
                     .read
@@ -333,8 +340,9 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
                 let hm = map.clone().m.ok_or_else(|| Error {
                     message: "Missing".to_owned(),
                 })?;
+                let keys = hm.keys().cloned().collect();
                 let mut des = Deserializer::new(HashMapRead::new(hm));
-                visitor.visit_map(MapAccess::new(&mut des, fields))
+                visitor.visit_map(MapAccess::new(&mut des, keys))
             }
         }
     }
@@ -405,12 +413,12 @@ impl<'de, 'a, R: Read + 'a> serde::de::SeqAccess<'de> for SeqAccess<'a, R> {
 
 struct MapAccess<'a, R: 'a> {
     de: &'a mut Deserializer<R>,
-    keys: &'static [&'static str],
+    keys: Vec<String>,
     current: usize,
 }
 
 impl<'a, R: 'a> MapAccess<'a, R> {
-    fn new(de: &'a mut Deserializer<R>, keys: &'static [&'static str]) -> Self {
+    fn new(de: &'a mut Deserializer<R>, keys: Vec<String>) -> Self {
         MapAccess {
             de,
             keys,
