@@ -134,8 +134,14 @@ where
         Ok(())
     }
 
-    fn serialize_bytes(self, _value: &[u8]) -> Result<()> {
-        unimplemented!()
+    fn serialize_bytes(self, value: &[u8]) -> Result<()> {
+        if !value.is_empty() {
+            self.writer.insert_value(AttributeValue {
+                b: Some(value.into()),
+                ..Default::default()
+            });
+        }
+        Ok(())
     }
 
     fn serialize_unit(self) -> Result<()> {
