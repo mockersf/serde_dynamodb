@@ -32,6 +32,7 @@ macro_rules! impl_deserialize_n {
 #[derive(Debug)]
 enum Index {
     String(String),
+    Bytes(Vec<u8>),
     Number(usize),
     None,
 }
@@ -187,11 +188,26 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         self.deserialize_str(visitor)
     }
 
-    fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        if self.as_key {
+            match &self.current_field {
+                Index::Bytes(ref key) => visitor.visit_bytes(key),
+                _ => visitor.visit_bytes(b""),
+            }
+        } else if let Some(field) = self.read.get_attribute_value(&self.current_field) {
+            field
+                .clone()
+                .b
+                .ok_or_else(|| Error {
+                    message: format!("missing bytes for field {:?}", &self.current_field),
+                })
+                .and_then(|bytes_field| visitor.visit_bytes(&bytes_field))
+        } else {
+            visitor.visit_bytes(b"")
+        }
     }
 
     fn deserialize_byte_buf<V>(self, _visitor: V) -> Result<V::Value>
