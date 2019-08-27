@@ -36,7 +36,7 @@ impl std::error::Error for Error {
         &self.message
     }
 
-    fn cause(&self) -> Option<&std::error::Error> {
+    fn cause(&self) -> Option<&dyn std::error::Error> {
         None
     }
 }
