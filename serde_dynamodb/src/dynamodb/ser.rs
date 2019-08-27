@@ -70,7 +70,10 @@ where
         Serializer { writer }
     }
 
-    fn reject_non_struct_root(&mut self, write: &mut dyn FnMut(&mut W) -> Result<()>) -> Result<()> {
+    fn reject_non_struct_root(
+        &mut self,
+        write: &mut dyn FnMut(&mut W) -> Result<()>,
+    ) -> Result<()> {
         if self.writer.is_in_object() {
             write(&mut self.writer)
         } else {
