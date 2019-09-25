@@ -7,28 +7,28 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
-#[test]
-fn cant_serialize_non_struct() {
-    let number: u8 = 5;
-    assert!(serde_dynamodb::to_hashmap(&number).is_err());
-    let number: u16 = 5;
-    assert!(serde_dynamodb::to_hashmap(&number).is_err());
-    let number: u32 = 5;
-    assert!(serde_dynamodb::to_hashmap(&number).is_err());
-    let number: u64 = 5;
-    assert!(serde_dynamodb::to_hashmap(&number).is_err());
+// #[test]
+// fn cant_serialize_non_struct() {
+//     let number: u8 = 5;
+//     assert!(serde_dynamodb::to_hashmap(&number).is_err());
+//     let number: u16 = 5;
+//     assert!(serde_dynamodb::to_hashmap(&number).is_err());
+//     let number: u32 = 5;
+//     assert!(serde_dynamodb::to_hashmap(&number).is_err());
+//     let number: u64 = 5;
+//     assert!(serde_dynamodb::to_hashmap(&number).is_err());
 
-    let number: f32 = 5.1;
-    assert!(serde_dynamodb::to_hashmap(&number).is_err());
-    let number: f64 = 5.2;
-    assert!(serde_dynamodb::to_hashmap(&number).is_err());
+//     let number: f32 = 5.1;
+//     assert!(serde_dynamodb::to_hashmap(&number).is_err());
+//     let number: f64 = 5.2;
+//     assert!(serde_dynamodb::to_hashmap(&number).is_err());
 
-    let none: Option<f64> = None;
-    assert!(serde_dynamodb::to_hashmap(&none).is_err());
+//     let none: Option<f64> = None;
+//     assert!(serde_dynamodb::to_hashmap(&none).is_err());
 
-    let some: Option<f64> = Some(13.54);
-    assert!(serde_dynamodb::to_hashmap(&some).is_err());
-}
+//     let some: Option<f64> = Some(13.54);
+//     assert!(serde_dynamodb::to_hashmap(&some).is_err());
+// }
 
 #[test]
 fn can_serialize_struct() {
@@ -307,8 +307,49 @@ fn can_be_missing_with_default() {
     assert_eq!(request.priority, Priority::ExtraLow);
 }
 
+#[test]
+fn can_serialize_bytes() {
+    #[derive(Serialize, Deserialize)]
+    struct WithBytes {
+        b: Vec<u8>,
+    }
+    let with_bytes = WithBytes {
+        b: vec![2, 3, 5, 7, 11, 13, 17, 19, 23, 29],
+    };
+
+    let hm = serde_dynamodb::to_hashmap(&with_bytes).unwrap();
+    let with_bytes_result: std::result::Result<WithBytes, serde_dynamodb::Error> =
+        serde_dynamodb::from_hashmap(hm);
+    assert!(with_bytes_result.is_ok())
+}
+
 /*#[test]
 fn cant_serialize_array_of_non_struct() {
     assert!(serde_dynamodb::to_hashmap(&vec!(1, 2, 3)).is_err())
 }
 */
+
+#[test]
+fn can_serialize_tuple() {
+    let tuple = (1, "a");
+    let hm = serde_dynamodb::to_hashmap(&tuple).unwrap();
+    let tuple_result: std::result::Result<(u32, String), serde_dynamodb::Error> =
+        serde_dynamodb::from_hashmap(dbg!(hm));
+    assert!(dbg!(tuple_result).is_ok());
+}
+
+#[test]
+fn can_serialize_tuple_in_struct() {
+    #[derive(Serialize, Deserialize, Debug)]
+    struct WithTuple {
+        t: (u32, String),
+    }
+    let with_tuple = WithTuple {
+        t: (1, String::from("a")),
+    };
+
+    let hm = serde_dynamodb::to_hashmap(&with_tuple).unwrap();
+    let with_tuple_result: std::result::Result<WithTuple, serde_dynamodb::Error> =
+        serde_dynamodb::from_hashmap(hm);
+    assert!(with_tuple_result.is_ok());
+}

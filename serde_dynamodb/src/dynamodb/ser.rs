@@ -10,13 +10,11 @@ use crate::error::{Error, Result};
 macro_rules! impl_serialize_n {
     ($type:ty, $method:ident) => {
         fn $method(self, value: $type) -> Result<()> {
-            self.reject_non_struct_root(&mut move |writer: &mut W| {
-                writer.insert_value(AttributeValue {
-                    n: Some(value.to_string()),
-                    ..Default::default()
-                });
-                Ok(())
-            })
+            self.writer.insert_value(AttributeValue {
+                n: Some(value.to_string()),
+                ..Default::default()
+            });
+            Ok(())
         }
     };
 }
@@ -69,19 +67,6 @@ where
     pub fn new(writer: W) -> Self {
         Serializer { writer }
     }
-
-    fn reject_non_struct_root(
-        &mut self,
-        write: &mut dyn FnMut(&mut W) -> Result<()>,
-    ) -> Result<()> {
-        if self.writer.is_in_object() {
-            write(&mut self.writer)
-        } else {
-            Err(Error {
-                message: "base object should be a struct".to_string(),
-            })
-        }
-    }
 }
 impl<'a, W> serde::Serializer for &'a mut Serializer<W>
 where
@@ -99,13 +84,11 @@ where
     type SerializeStructVariant = Compound<'a, W>;
 
     fn serialize_bool(self, value: bool) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                bool: Some(value),
-                ..Default::default()
-            });
-            Ok(())
-        })
+        self.writer.insert_value(AttributeValue {
+            bool: Some(value),
+            ..Default::default()
+        });
+        Ok(())
     }
 
     impl_serialize_n!(i8, serialize_i8);
@@ -148,13 +131,11 @@ where
     }
 
     fn serialize_unit(self) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                null: Some(true),
-                ..Default::default()
-            });
-            Ok(())
-        })
+        self.writer.insert_value(AttributeValue {
+            null: Some(true),
+            ..Default::default()
+        });
+        Ok(())
     }
 
     fn serialize_unit_struct(self, _name: &'static str) -> Result<()> {
@@ -193,13 +174,11 @@ where
     }
 
     fn serialize_none(self) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                null: Some(true),
-                ..Default::default()
-            });
-            Ok(())
-        })
+        self.writer.insert_value(AttributeValue {
+            null: Some(true),
+            ..Default::default()
+        });
+        Ok(())
     }
 
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<()>
@@ -214,7 +193,7 @@ where
     }
 
     fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple> {
-        unimplemented!()
+        Ok(Compound::new(self))
     }
 
     fn serialize_tuple_struct(
@@ -236,11 +215,11 @@ where
     }
 
     fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap> {
-        Ok(Compound::new(self))
+        unimplemented!()
     }
 
-    fn serialize_struct(self, _name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
-        self.serialize_map(Some(len))
+    fn serialize_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeStruct> {
+        Ok(Compound::new(self))
     }
 
     fn serialize_struct_variant(
@@ -299,6 +278,7 @@ struct Compound<'a, W: 'a> {
     ser: &'a mut Serializer<W>,
     is_root: bool,
     current: HashMapWriter,
+    item: u8,
 }
 
 impl<'a, W> Compound<'a, W>
@@ -315,6 +295,7 @@ where
             ser,
             is_root,
             current: writer,
+            item: 0,
         }
     }
 }
@@ -326,16 +307,31 @@ where
     type Ok = ();
     type Error = Error;
 
-    fn serialize_element<T: ?Sized>(&mut self, _value: &T) -> Result<()>
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()>
     where
         T: serde::ser::Serialize,
     {
-        unimplemented!()
+        let key = format!("_{}", self.item);
+        self.item += 1;
+        if self.is_root {
+            self.ser.writer.set_key(key);
+            value.serialize(&mut *self.ser)?;
+            Ok(())
+        } else {
+            (&mut self.current).set_key(key);
+            to_writer(&mut self.current, value)
+        }
     }
 
     #[inline]
     fn end(self) -> Result<()> {
-        unimplemented!()
+        if !self.is_root {
+            self.ser.writer.insert_value(AttributeValue {
+                m: Some(self.current.root.clone()),
+                ..Default::default()
+            });
+        }
+        Ok(())
     }
 }
 

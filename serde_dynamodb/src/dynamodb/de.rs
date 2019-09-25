@@ -37,19 +37,21 @@ enum Index {
     None,
 }
 
-trait Read {
+trait Read: Clone {
     fn get_attribute_value(&self, index: &Index) -> Option<&AttributeValue>;
     fn get_keys(&self) -> Vec<String>;
 }
-struct HashMapRead<S: ::std::hash::BuildHasher> {
+
+#[derive(Clone)]
+struct HashMapRead<S: ::std::hash::BuildHasher + Clone> {
     hashmap: HashMap<String, AttributeValue, S>,
 }
-impl<S: ::std::hash::BuildHasher> HashMapRead<S> {
+impl<S: ::std::hash::BuildHasher + Clone> HashMapRead<S> {
     fn new(hm: HashMap<String, AttributeValue, S>) -> Self {
         HashMapRead { hashmap: hm }
     }
 }
-impl<S: ::std::hash::BuildHasher> Read for HashMapRead<S> {
+impl<S: ::std::hash::BuildHasher + Clone> Read for HashMapRead<S> {
     fn get_attribute_value(&self, index: &Index) -> Option<&AttributeValue> {
         match *index {
             Index::String(ref key) => self.hashmap.get(key),
@@ -61,6 +63,7 @@ impl<S: ::std::hash::BuildHasher> Read for HashMapRead<S> {
     }
 }
 
+#[derive(Clone)]
 struct VecRead {
     vec: Vec<AttributeValue>,
 }
@@ -309,11 +312,31 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         visitor.visit_seq(SeqAccess::new(&mut des))
     }
 
-    fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value>
+    fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        match self.current_field {
+            Index::None => {
+                let mut des = Deserializer::new(self.read.clone());
+                visitor.visit_seq(TupleAccess::new(&mut des))
+            }
+            _ => {
+                let subread = HashMapRead {
+                    hashmap: self
+                        .read
+                        .get_attribute_value(&self.current_field)
+                        .ok_or_else(|| Error {
+                            message: format!("missing hashmap for field {:?}", &self.current_field),
+                        })?
+                        .m
+                        .clone()
+                        .unwrap(),
+                };
+                let mut des = Deserializer::new(subread);
+                visitor.visit_seq(TupleAccess::new(&mut des))
+            }
+        }
     }
 
     fn deserialize_tuple_struct<V>(
@@ -392,6 +415,36 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         V: serde::de::Visitor<'de>,
     {
         visitor.visit_unit()
+    }
+}
+
+struct TupleAccess<'a, R: 'a> {
+    de: &'a mut Deserializer<R>,
+    current: usize,
+}
+impl<'a, R: 'a> TupleAccess<'a, R> {
+    fn new(de: &'a mut Deserializer<R>) -> Self {
+        TupleAccess { de, current: 0 }
+    }
+}
+impl<'de, 'a, R: Read + 'a> serde::de::SeqAccess<'de> for TupleAccess<'a, R> {
+    type Error = Error;
+
+    fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
+    where
+        T: serde::de::DeserializeSeed<'de>,
+    {
+        self.de.current_field = Index::String(format!("_{}", self.current));
+        self.current += 1;
+        if self
+            .de
+            .read
+            .get_attribute_value(&self.de.current_field)
+            .is_none()
+        {
+            return Ok(None);
+        }
+        seed.deserialize(&mut *self.de).map(Some)
     }
 }
 
@@ -491,7 +544,7 @@ where
 /// is wrong with the data, for example required struct fields are missing from
 /// the JSON map or some number is too big to fit in the expected primitive
 /// type.
-pub fn from_hashmap<'a, T, S: ::std::hash::BuildHasher>(
+pub fn from_hashmap<'a, T, S: ::std::hash::BuildHasher + Clone>(
     hm: HashMap<String, AttributeValue, S>,
 ) -> Result<T>
 where
