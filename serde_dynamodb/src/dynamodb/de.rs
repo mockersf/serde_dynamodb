@@ -101,11 +101,31 @@ where
 impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> {
     type Error = Error;
 
-    fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        let f = self
+            .read
+            .get_attribute_value(&self.current_field)
+            .ok_or_else(|| Error {
+                message: format!("missing for field {:?}", &self.current_field),
+            })?
+            .clone();
+
+        if f.b.is_some() {
+            self.deserialize_bool(visitor)
+        } else if f.l.is_some() || f.ns.is_some() || f.ss.is_some() {
+            self.deserialize_seq(visitor)
+        } else if f.m.is_some() {
+            self.deserialize_map(visitor)
+        } else if f.n.is_some() {
+            self.deserialize_f64(visitor)
+        } else if f.s.is_some() {
+            self.deserialize_str(visitor)
+        } else {
+            unimplemented!()
+        }
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
