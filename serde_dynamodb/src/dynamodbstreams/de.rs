@@ -6,6 +6,7 @@ use std::collections::HashMap;
 
 use rusoto_dynamodbstreams::AttributeValue;
 use serde;
+use serde::de::IntoDeserializer;
 
 use crate::error::{Error, Result};
 
@@ -38,19 +39,21 @@ enum Index {
     None,
 }
 
-trait Read {
+trait Read: Clone {
     fn get_attribute_value(&self, index: &Index) -> Option<&AttributeValue>;
     fn get_keys(&self) -> Vec<String>;
 }
-struct HashMapRead<S: ::std::hash::BuildHasher> {
+
+#[derive(Clone)]
+struct HashMapRead<S: ::std::hash::BuildHasher + Clone> {
     hashmap: HashMap<String, AttributeValue, S>,
 }
-impl<S: ::std::hash::BuildHasher> HashMapRead<S> {
+impl<S: ::std::hash::BuildHasher + Clone> HashMapRead<S> {
     fn new(hm: HashMap<String, AttributeValue, S>) -> Self {
         HashMapRead { hashmap: hm }
     }
 }
-impl<S: ::std::hash::BuildHasher> Read for HashMapRead<S> {
+impl<S: ::std::hash::BuildHasher + Clone> Read for HashMapRead<S> {
     fn get_attribute_value(&self, index: &Index) -> Option<&AttributeValue> {
         match *index {
             Index::String(ref key) => self.hashmap.get(key),
@@ -62,6 +65,7 @@ impl<S: ::std::hash::BuildHasher> Read for HashMapRead<S> {
     }
 }
 
+#[derive(Clone)]
 struct VecRead {
     vec: Vec<AttributeValue>,
 }
@@ -100,11 +104,31 @@ where
 impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> {
     type Error = Error;
 
-    fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        let f = self
+            .read
+            .get_attribute_value(&self.current_field)
+            .ok_or_else(|| Error {
+                message: format!("missing for field {:?}", &self.current_field),
+            })?
+            .clone();
+
+        if f.b.is_some() {
+            self.deserialize_bool(visitor)
+        } else if f.l.is_some() || f.ns.is_some() || f.ss.is_some() {
+            self.deserialize_seq(visitor)
+        } else if f.m.is_some() {
+            self.deserialize_map(visitor)
+        } else if f.n.is_some() {
+            self.deserialize_f64(visitor)
+        } else if f.s.is_some() {
+            self.deserialize_str(visitor)
+        } else {
+            unimplemented!()
+        }
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
@@ -189,11 +213,21 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         self.deserialize_str(visitor)
     }
 
-    fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        if let Some(field) = self.read.get_attribute_value(&self.current_field) {
+            field
+                .clone()
+                .b
+                .ok_or_else(|| Error {
+                    message: format!("missing bytes for field {:?}", &self.current_field),
+                })
+                .and_then(|bytes_field| visitor.visit_bytes(&bytes_field))
+        } else {
+            visitor.visit_bytes(b"")
+        }
     }
 
     fn deserialize_byte_buf<V>(self, _visitor: V) -> Result<V::Value>
@@ -295,30 +329,86 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         visitor.visit_seq(SeqAccess::new(&mut des))
     }
 
-    fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value>
+    fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        match self.current_field {
+            Index::None => {
+                let mut des = Deserializer::new(self.read.clone());
+                visitor.visit_seq(TupleAccess::new(&mut des))
+            }
+            _ => {
+                let subread = HashMapRead {
+                    hashmap: self
+                        .read
+                        .get_attribute_value(&self.current_field)
+                        .ok_or_else(|| Error {
+                            message: format!("missing hashmap for field {:?}", &self.current_field),
+                        })?
+                        .m
+                        .clone()
+                        .unwrap(),
+                };
+                let mut des = Deserializer::new(subread);
+                visitor.visit_seq(TupleAccess::new(&mut des))
+            }
+        }
     }
 
     fn deserialize_tuple_struct<V>(
         self,
         _name: &'static str,
         _len: usize,
-        _visitor: V,
+        visitor: V,
     ) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        match self.current_field {
+            Index::None => {
+                let mut des = Deserializer::new(self.read.clone());
+                visitor.visit_seq(TupleAccess::new(&mut des))
+            }
+            _ => {
+                let subread = HashMapRead {
+                    hashmap: self
+                        .read
+                        .get_attribute_value(&self.current_field)
+                        .ok_or_else(|| Error {
+                            message: format!("missing hashmap for field {:?}", &self.current_field),
+                        })?
+                        .m
+                        .clone()
+                        .unwrap(),
+                };
+                let mut des = Deserializer::new(subread);
+                visitor.visit_seq(TupleAccess::new(&mut des))
+            }
+        }
     }
 
-    fn deserialize_map<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        match self.current_field {
+            Index::None => visitor.visit_map(MapAccess::new(self, self.read.get_keys())),
+            _ => {
+                let map = self
+                    .read
+                    .get_attribute_value(&self.current_field)
+                    .ok_or_else(|| Error {
+                        message: format!("missing struct for field {:?}", &self.current_field),
+                    })?;
+                let hm = map.clone().m.ok_or_else(|| Error {
+                    message: "Missing".to_owned(),
+                })?;
+                let keys = hm.keys().cloned().collect();
+                let mut des = Deserializer::new(HashMapRead::new(hm));
+                visitor.visit_map(MapAccess::new(&mut des, keys))
+            }
+        }
     }
 
     fn deserialize_struct<V>(
@@ -353,12 +443,54 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         self,
         _name: &str,
         _variants: &'static [&'static str],
-        _visitor: V,
+        visitor: V,
     ) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        let (variant, values) = if let Index::None = self.current_field {
+            let variant = self
+                .read
+                .get_attribute_value(&Index::String(String::from("___enum_tag")))
+                .ok_or_else(|| Error {
+                    message: "Missing enum tag field".to_owned(),
+                })?
+                .clone()
+                .s
+                .ok_or_else(|| Error {
+                    message: "Missing enum tag value".to_owned(),
+                })?;
+            let values = self
+                .read
+                .get_attribute_value(&Index::String(String::from("___enum_values")))
+                .and_then(|v| v.m.clone());
+            (variant, values)
+        } else {
+            let base = self
+                .read
+                .get_attribute_value(&self.current_field)
+                .ok_or_else(|| Error {
+                    message: format!("missing enum for field {:?}", &self.current_field),
+                })?
+                .m
+                .clone()
+                .ok_or_else(|| Error {
+                    message: "Missing".to_owned(),
+                })?;
+            eprintln!("got base: {:?}", base);
+            (
+                base.get("___enum_tag")
+                    .unwrap()
+                    .s
+                    .clone()
+                    .ok_or_else(|| Error {
+                        message: "Missing enum tag value".to_owned(),
+                    })?,
+                base.get("___enum_values").and_then(|v| v.m.clone()),
+            )
+        };
+        let mut des = Deserializer::new(HashMapRead::new(values.unwrap_or_else(HashMap::new)));
+        visitor.visit_enum(EnumAccess::new(&mut des, variant))
     }
 
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value>
@@ -378,6 +510,96 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         V: serde::de::Visitor<'de>,
     {
         visitor.visit_unit()
+    }
+}
+
+struct EnumAccess<'a, R: 'a> {
+    de: &'a mut Deserializer<R>,
+    variant_name: String,
+}
+impl<'a, R: 'a> EnumAccess<'a, R> {
+    fn new(de: &'a mut Deserializer<R>, variant_name: String) -> Self {
+        EnumAccess { de, variant_name }
+    }
+}
+impl<'de, 'a, R: Read + 'a> serde::de::EnumAccess<'de> for EnumAccess<'a, R> {
+    type Error = Error;
+    type Variant = VariantAccess<'a, R>;
+
+    fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant)>
+    where
+        V: serde::de::DeserializeSeed<'de>,
+    {
+        let value = seed.deserialize(self.variant_name.into_deserializer())?;
+        Ok((value, VariantAccess::new(self.de)))
+    }
+}
+
+struct VariantAccess<'a, R: 'a> {
+    de: &'a mut Deserializer<R>,
+}
+impl<'a, R: 'a> VariantAccess<'a, R> {
+    fn new(de: &'a mut Deserializer<R>) -> Self {
+        VariantAccess { de }
+    }
+}
+impl<'de, 'a, R: Read + 'a> serde::de::VariantAccess<'de> for VariantAccess<'a, R> {
+    type Error = Error;
+
+    fn unit_variant(self) -> Result<()> {
+        Ok(())
+    }
+
+    fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value>
+    where
+        T: serde::de::DeserializeSeed<'de>,
+    {
+        self.de.current_field = Index::String(String::from("_0"));
+        seed.deserialize(&mut *self.de)
+    }
+
+    fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        visitor.visit_seq(TupleAccess::new(self.de))
+    }
+
+    fn struct_variant<V>(self, _fields: &'static [&'static str], visitor: V) -> Result<V::Value>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        visitor.visit_map(MapAccess::new(self.de, self.de.read.get_keys()))
+    }
+}
+
+struct TupleAccess<'a, R: 'a> {
+    de: &'a mut Deserializer<R>,
+    current: usize,
+}
+impl<'a, R: 'a> TupleAccess<'a, R> {
+    fn new(de: &'a mut Deserializer<R>) -> Self {
+        TupleAccess { de, current: 0 }
+    }
+}
+impl<'de, 'a, R: Read + 'a> serde::de::SeqAccess<'de> for TupleAccess<'a, R> {
+    type Error = Error;
+
+    fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
+    where
+        T: serde::de::DeserializeSeed<'de>,
+    {
+        self.de.current_field = Index::String(format!("_{}", self.current));
+        self.current += 1;
+        if self
+            .de
+            .read
+            .get_attribute_value(&self.de.current_field)
+            .is_none()
+        {
+            return Ok(None);
+        }
+        seed.deserialize(&mut *self.de).map(Some)
     }
 }
 
@@ -477,7 +699,7 @@ where
 /// is wrong with the data, for example required struct fields are missing from
 /// the JSON map or some number is too big to fit in the expected primitive
 /// type.
-pub fn from_hashmap<'a, T, S: ::std::hash::BuildHasher>(
+pub fn from_hashmap<'a, T, S: ::std::hash::BuildHasher + Clone>(
     hm: HashMap<String, AttributeValue, S>,
 ) -> Result<T>
 where

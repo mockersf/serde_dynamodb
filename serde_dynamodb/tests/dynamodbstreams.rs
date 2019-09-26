@@ -9,27 +9,14 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
-#[test]
-fn cant_serialize_non_struct() {
-    let number: u8 = 5;
-    assert!(serde_dynamodb::streams::to_hashmap(&number).is_err());
-    let number: u16 = 5;
-    assert!(serde_dynamodb::streams::to_hashmap(&number).is_err());
-    let number: u32 = 5;
-    assert!(serde_dynamodb::streams::to_hashmap(&number).is_err());
-    let number: u64 = 5;
-    assert!(serde_dynamodb::streams::to_hashmap(&number).is_err());
-
-    let number: f32 = 5.1;
-    assert!(serde_dynamodb::streams::to_hashmap(&number).is_err());
-    let number: f64 = 5.2;
-    assert!(serde_dynamodb::streams::to_hashmap(&number).is_err());
-
-    let none: Option<f64> = None;
-    assert!(serde_dynamodb::streams::to_hashmap(&none).is_err());
-
-    let some: Option<f64> = Some(13.54);
-    assert!(serde_dynamodb::streams::to_hashmap(&some).is_err());
+macro_rules! test_with {
+    ($type:ty, $val:expr) => {
+        let original = $val;
+        let serialized = serde_dynamodb::streams::to_hashmap(&original).unwrap();
+        let deserialized: std::result::Result<$type, serde_dynamodb::Error> =
+            serde_dynamodb::streams::from_hashmap(dbg!(serialized));
+        assert!(dbg!(deserialized).is_ok());
+    };
 }
 
 #[test]
@@ -91,6 +78,13 @@ fn can_deserialize_struct() {
 
 #[test]
 fn can_go_back_and_forth() {
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    enum MyEnum {
+        Unit,
+        Newtype(i32),
+        Tuple(i32, bool),
+        Struct { f: i32 },
+    }
     #[derive(Deserialize, Serialize, Debug, PartialEq)]
     struct Internal {
         k: i32,
@@ -107,6 +101,10 @@ fn can_go_back_and_forth() {
         b: u8,
         u: u32,
         c: char,
+        e1: MyEnum,
+        e2: MyEnum,
+        e3: MyEnum,
+        e4: MyEnum,
         intern: Internal,
         list: Vec<i32>,
         some: Option<Internal>,
@@ -123,6 +121,10 @@ fn can_go_back_and_forth() {
         b: 13,
         u: 312,
         c: 0 as char,
+        e1: MyEnum::Unit,
+        e2: MyEnum::Newtype(5),
+        e3: MyEnum::Tuple(12, false),
+        e4: MyEnum::Struct { f: 27 },
         intern: Internal { k: 512, f: 13.54 },
         list: vec![0, 2, 5],
         some: Some(Internal { k: 120, f: 144.304 }),
@@ -309,8 +311,115 @@ fn can_be_missing_with_default() {
     assert_eq!(request.priority, Priority::ExtraLow);
 }
 
-/*#[test]
-fn cant_serialize_array_of_non_struct() {
-    assert!(serde_dynamodb::streams::to_hashmap(&vec!(1, 2, 3)).is_err())
+#[test]
+fn can_serialize_bytes() {
+    #[derive(Serialize, Deserialize, Debug)]
+    struct WithBytes {
+        b: Vec<u8>,
+    }
+
+    test_with!(
+        WithBytes,
+        WithBytes {
+            b: vec![2, 3, 5, 7, 11, 13, 17, 19, 23, 29],
+        }
+    );
 }
-*/
+
+#[test]
+fn can_serialize_tuple() {
+    test_with!((u32, String), (1, "a"));
+}
+
+#[test]
+fn can_serialize_tuple_in_struct() {
+    #[derive(Serialize, Deserialize, Debug)]
+    struct WithTuple {
+        t: (u32, String),
+    }
+
+    test_with!(
+        WithTuple,
+        WithTuple {
+            t: (1, String::from("a")),
+        }
+    );
+}
+
+#[test]
+fn can_serialize_tuple_struct() {
+    #[derive(Serialize, Deserialize, Debug)]
+    struct Point(i32, i32, bool);
+
+    test_with!(Point, Point(1, 2, false));
+}
+
+#[test]
+fn can_serialize_hashmap() {
+    #[derive(Serialize, Deserialize, Debug)]
+    struct WithHashmap {
+        hm: HashMap<String, String>,
+    };
+
+    let mut value = HashMap::new();
+    value.insert("a".to_string(), "hoho".to_string());
+    value.insert("b".to_string(), "haha".to_string());
+
+    test_with!(WithHashmap, WithHashmap { hm: value });
+}
+
+#[test]
+fn can_serialize_enum() {
+    #[derive(Serialize, Deserialize, Debug)]
+    enum MyEnum {
+        Unit,
+        Newtype(i32),
+        Tuple(i32, bool),
+        Struct { f: i32 },
+    }
+
+    test_with!(MyEnum, MyEnum::Unit);
+    test_with!(MyEnum, MyEnum::Newtype(5));
+    test_with!(MyEnum, MyEnum::Tuple(5, false));
+    test_with!(MyEnum, MyEnum::Struct { f: 7 });
+}
+
+#[test]
+fn can_serialize_enum_in_struct() {
+    #[derive(Serialize, Deserialize, Debug)]
+    enum MyEnum {
+        Unit,
+        Newtype(i32),
+        Tuple(i32, bool),
+        Struct { f: i32 },
+    }
+    #[derive(Serialize, Deserialize, Debug)]
+    struct WithEnum {
+        my_enum: MyEnum,
+    }
+
+    test_with!(
+        WithEnum,
+        WithEnum {
+            my_enum: MyEnum::Unit
+        }
+    );
+    test_with!(
+        WithEnum,
+        WithEnum {
+            my_enum: MyEnum::Newtype(5)
+        }
+    );
+    test_with!(
+        WithEnum,
+        WithEnum {
+            my_enum: MyEnum::Tuple(5, false)
+        }
+    );
+    test_with!(
+        WithEnum,
+        WithEnum {
+            my_enum: MyEnum::Struct { f: 7 }
+        }
+    );
+}

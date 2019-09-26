@@ -7,18 +7,17 @@ use std::collections::HashMap;
 use rusoto_dynamodbstreams::AttributeValue;
 use serde;
 
+use crate::common::SimpleKeySerializer;
 use crate::error::{Error, Result};
 
 macro_rules! impl_serialize_n {
     ($type:ty, $method:ident) => {
         fn $method(self, value: $type) -> Result<()> {
-            self.reject_non_struct_root(&mut move |writer: &mut W| {
-                writer.insert_value(AttributeValue {
-                    n: Some(value.to_string()),
-                    ..Default::default()
-                });
-                Ok(())
-            })
+            self.writer.insert_value(AttributeValue {
+                n: Some(value.to_string()),
+                ..Default::default()
+            });
+            Ok(())
         }
     };
 }
@@ -71,16 +70,6 @@ where
     pub fn new(writer: W) -> Self {
         Serializer { writer }
     }
-
-    fn reject_non_struct_root(&mut self, write: &mut FnMut(&mut W) -> Result<()>) -> Result<()> {
-        if self.writer.is_in_object() {
-            write(&mut self.writer)
-        } else {
-            Err(Error {
-                message: "base object should be a struct".to_string(),
-            })
-        }
-    }
 }
 impl<'a, W> serde::Serializer for &'a mut Serializer<W>
 where
@@ -92,19 +81,17 @@ where
     type SerializeSeq = SeqWriter<'a, W>;
     type SerializeTuple = Compound<'a, W>;
     type SerializeTupleStruct = Compound<'a, W>;
-    type SerializeTupleVariant = Compound<'a, W>;
+    type SerializeTupleVariant = EnumCompound<'a, W>;
     type SerializeMap = Compound<'a, W>;
     type SerializeStruct = Compound<'a, W>;
-    type SerializeStructVariant = Compound<'a, W>;
+    type SerializeStructVariant = EnumCompound<'a, W>;
 
     fn serialize_bool(self, value: bool) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                bool: Some(value),
-                ..Default::default()
-            });
-            Ok(())
-        })
+        self.writer.insert_value(AttributeValue {
+            bool: Some(value),
+            ..Default::default()
+        });
+        Ok(())
     }
 
     impl_serialize_n!(i8, serialize_i8);
@@ -136,18 +123,22 @@ where
         Ok(())
     }
 
-    fn serialize_bytes(self, _value: &[u8]) -> Result<()> {
-        unimplemented!()
+    fn serialize_bytes(self, value: &[u8]) -> Result<()> {
+        if !value.is_empty() {
+            self.writer.insert_value(AttributeValue {
+                b: Some(value.into()),
+                ..Default::default()
+            });
+        }
+        Ok(())
     }
 
     fn serialize_unit(self) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                null: Some(true),
-                ..Default::default()
-            });
-            Ok(())
-        })
+        self.writer.insert_value(AttributeValue {
+            null: Some(true),
+            ..Default::default()
+        });
+        Ok(())
     }
 
     fn serialize_unit_struct(self, _name: &'static str) -> Result<()> {
@@ -158,9 +149,9 @@ where
         self,
         _name: &'static str,
         _variant_index: u32,
-        _variant: &'static str,
+        variant: &'static str,
     ) -> Result<()> {
-        unimplemented!()
+        EnumCompound::new(self, variant, false).end_wrapper()
     }
 
     fn serialize_newtype_struct<T: ?Sized>(self, _name: &'static str, value: &T) -> Result<()>
@@ -176,23 +167,24 @@ where
         self,
         _name: &'static str,
         _variant_index: u32,
-        _variant: &'static str,
-        _value: &T,
+        variant: &'static str,
+        value: &T,
     ) -> Result<()>
     where
         T: serde::ser::Serialize,
     {
-        unimplemented!()
+        use serde::ser::SerializeTupleVariant;
+        let mut compound = EnumCompound::new(self, variant, true);
+        compound.serialize_field(value)?;
+        compound.end()
     }
 
     fn serialize_none(self) -> Result<()> {
-        self.reject_non_struct_root(&mut move |writer: &mut W| {
-            writer.insert_value(AttributeValue {
-                null: Some(true),
-                ..Default::default()
-            });
-            Ok(())
-        })
+        self.writer.insert_value(AttributeValue {
+            null: Some(true),
+            ..Default::default()
+        });
+        Ok(())
     }
 
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<()>
@@ -207,7 +199,7 @@ where
     }
 
     fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple> {
-        unimplemented!()
+        Ok(Compound::new(self))
     }
 
     fn serialize_tuple_struct(
@@ -215,35 +207,35 @@ where
         _name: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleStruct> {
-        unimplemented!()
+        Ok(Compound::new(self))
     }
 
     fn serialize_tuple_variant(
         self,
         _name: &'static str,
         _variant_index: u32,
-        _variant: &'static str,
+        variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleVariant> {
-        unimplemented!()
+        Ok(EnumCompound::new(self, variant, true))
     }
 
     fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap> {
         Ok(Compound::new(self))
     }
 
-    fn serialize_struct(self, _name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
-        self.serialize_map(Some(len))
+    fn serialize_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeStruct> {
+        Ok(Compound::new(self))
     }
 
     fn serialize_struct_variant(
         self,
         _name: &'static str,
         _variant_index: u32,
-        _variant: &'static str,
+        variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStructVariant> {
-        unimplemented!()
+        Ok(EnumCompound::new(self, variant, true))
     }
 }
 
@@ -288,10 +280,187 @@ where
 }
 
 #[derive(Debug)]
+enum Key {
+    Index(usize),
+    Key(String),
+    None,
+}
+
+#[derive(Debug)]
+struct EnumCompound<'a, W: 'a> {
+    ser: &'a mut Serializer<W>,
+    is_root: bool,
+    values_writer: HashMapWriter,
+    wrapper_to_close: Option<HashMapWriter>,
+    current_item: Key,
+}
+
+impl<'a, W> EnumCompound<'a, W>
+where
+    W: WriterTrait,
+{
+    fn new(
+        ser: &'a mut Serializer<W>,
+        variant: &'static str,
+        has_values: bool,
+    ) -> EnumCompound<'a, W> {
+        let wrapper_to_close = if ser.writer.is_in_object() {
+            let mut writer = HashMapWriter {
+                root: HashMap::new(),
+                current_key: String::new(),
+            };
+
+            (&mut writer).set_key(String::from("___enum_tag"));
+            (&mut writer).insert_value(AttributeValue {
+                s: Some(variant.to_string()),
+                ..Default::default()
+            });
+            if has_values {
+                (&mut writer).set_key(String::from("___enum_values"));
+            }
+            Some(writer)
+        } else {
+            ser.writer.set_key(String::from("___enum_tag"));
+            ser.writer.insert_value(AttributeValue {
+                s: Some(variant.to_string()),
+                ..Default::default()
+            });
+            if has_values {
+                ser.writer.set_key(String::from("___enum_values"));
+            }
+
+            None
+        };
+        let values_writer = HashMapWriter {
+            root: HashMap::new(),
+            current_key: String::new(),
+        };
+        let is_root = !ser.writer.is_in_object();
+        EnumCompound {
+            ser,
+            is_root,
+            values_writer,
+            wrapper_to_close,
+            current_item: Key::None,
+        }
+    }
+
+    fn end_wrapper(self) -> Result<()> {
+        if let Some(wrapper) = self.wrapper_to_close {
+            self.ser.writer.insert_value(AttributeValue {
+                m: Some(wrapper.root.clone()),
+                ..Default::default()
+            });
+        }
+        Ok(())
+    }
+}
+impl<'a, W> serde::ser::SerializeTupleVariant for EnumCompound<'a, W>
+where
+    W: WriterTrait,
+{
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()>
+    where
+        T: serde::ser::Serialize,
+    {
+        if let Key::None = self.current_item {
+            self.current_item = Key::Index(0);
+        }
+        if let Key::Index(idx) = self.current_item {
+            let key = format!("_{}", idx);
+            self.current_item = Key::Index(idx + 1);
+            if self.is_root {
+                self.ser.writer.set_key(key);
+                value.serialize(&mut *self.ser)?;
+                Ok(())
+            } else {
+                (&mut self.values_writer).set_key(key);
+                to_writer(&mut self.values_writer, value)
+            }
+        } else {
+            Err(Error {
+                message: String::from(
+                    "trying to serialize something that is not a tuple as a tuple",
+                ),
+            })
+        }
+    }
+
+    #[inline]
+    fn end(self) -> Result<()> {
+        if let Some(mut wrapper) = self.wrapper_to_close {
+            (&mut wrapper).insert_value(AttributeValue {
+                m: Some(self.values_writer.root.clone()),
+                ..Default::default()
+            });
+            if !self.is_root {
+                self.ser.writer.insert_value(AttributeValue {
+                    m: Some(wrapper.root.clone()),
+                    ..Default::default()
+                });
+            }
+        } else if !self.is_root {
+            self.ser.writer.insert_value(AttributeValue {
+                m: Some(self.values_writer.root.clone()),
+                ..Default::default()
+            });
+        }
+        Ok(())
+    }
+}
+
+impl<'a, W> serde::ser::SerializeStructVariant for EnumCompound<'a, W>
+where
+    W: WriterTrait,
+{
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<()>
+    where
+        T: serde::ser::Serialize,
+    {
+        if self.is_root {
+            self.ser.writer.set_key(String::from(key));
+            value.serialize(&mut *self.ser)?;
+            Ok(())
+        } else {
+            (&mut self.values_writer).set_key(String::from(key));
+            to_writer(&mut self.values_writer, value)
+        }
+    }
+
+    fn end(self) -> Result<()> {
+        if let Some(mut wrapper) = self.wrapper_to_close {
+            (&mut wrapper).insert_value(AttributeValue {
+                m: Some(self.values_writer.root.clone()),
+                ..Default::default()
+            });
+            if !self.is_root {
+                self.ser.writer.insert_value(AttributeValue {
+                    m: Some(wrapper.root.clone()),
+                    ..Default::default()
+                });
+            }
+        } else if !self.is_root {
+            self.ser.writer.insert_value(AttributeValue {
+                m: Some(self.values_writer.root.clone()),
+                ..Default::default()
+            });
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
 struct Compound<'a, W: 'a> {
     ser: &'a mut Serializer<W>,
     is_root: bool,
     current: HashMapWriter,
+    current_item: Key,
 }
 
 impl<'a, W> Compound<'a, W>
@@ -308,6 +477,7 @@ where
             ser,
             is_root,
             current: writer,
+            current_item: Key::None,
         }
     }
 }
@@ -319,16 +489,42 @@ where
     type Ok = ();
     type Error = Error;
 
-    fn serialize_element<T: ?Sized>(&mut self, _value: &T) -> Result<()>
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()>
     where
         T: serde::ser::Serialize,
     {
-        unimplemented!()
+        if let Key::None = self.current_item {
+            self.current_item = Key::Index(0);
+        }
+        if let Key::Index(idx) = self.current_item {
+            let key = format!("_{}", idx);
+            self.current_item = Key::Index(idx + 1);
+            if self.is_root {
+                self.ser.writer.set_key(key);
+                value.serialize(&mut *self.ser)?;
+                Ok(())
+            } else {
+                (&mut self.current).set_key(key);
+                to_writer(&mut self.current, value)
+            }
+        } else {
+            Err(Error {
+                message: String::from(
+                    "trying to serialize something that is not a tuple as a tuple",
+                ),
+            })
+        }
     }
 
     #[inline]
     fn end(self) -> Result<()> {
-        unimplemented!()
+        if !self.is_root {
+            self.ser.writer.insert_value(AttributeValue {
+                m: Some(self.current.root.clone()),
+                ..Default::default()
+            });
+        }
+        Ok(())
     }
 }
 
@@ -339,34 +535,41 @@ where
     type Ok = ();
     type Error = Error;
 
-    fn serialize_field<T: ?Sized>(&mut self, _value: &T) -> Result<()>
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()>
     where
         T: serde::ser::Serialize,
     {
-        unimplemented!()
+        if let Key::None = self.current_item {
+            self.current_item = Key::Index(0);
+        }
+        if let Key::Index(idx) = self.current_item {
+            let key = format!("_{}", idx);
+            self.current_item = Key::Index(idx + 1);
+            if self.is_root {
+                self.ser.writer.set_key(key);
+                value.serialize(&mut *self.ser)?;
+                Ok(())
+            } else {
+                (&mut self.current).set_key(key);
+                to_writer(&mut self.current, value)
+            }
+        } else {
+            Err(Error {
+                message: String::from(
+                    "trying to serialize something that is not a tuple as a tuple",
+                ),
+            })
+        }
     }
 
     fn end(self) -> Result<()> {
-        unimplemented!()
-    }
-}
-
-impl<'a, W> serde::ser::SerializeTupleVariant for Compound<'a, W>
-where
-    W: WriterTrait,
-{
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_field<T: ?Sized>(&mut self, _value: &T) -> Result<()>
-    where
-        T: serde::ser::Serialize,
-    {
-        unimplemented!()
-    }
-
-    fn end(self) -> Result<()> {
-        unimplemented!()
+        if !self.is_root {
+            self.ser.writer.insert_value(AttributeValue {
+                m: Some(self.current.root.clone()),
+                ..Default::default()
+            });
+        }
+        Ok(())
     }
 }
 
@@ -377,22 +580,46 @@ where
     type Ok = ();
     type Error = Error;
 
-    fn serialize_key<T: ?Sized>(&mut self, _key: &T) -> Result<()>
+    fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<()>
     where
         T: serde::ser::Serialize,
     {
-        unimplemented!()
+        let mut serializer = SimpleKeySerializer::new();
+        key.serialize(&mut serializer)?;
+        self.current_item = Key::Key(serializer.get_result());
+        Ok(())
     }
 
-    fn serialize_value<T: ?Sized>(&mut self, _value: &T) -> Result<()>
+    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<()>
     where
         T: serde::ser::Serialize,
     {
-        unimplemented!()
+        if let Key::Key(key) = &self.current_item {
+            if self.is_root {
+                self.ser.writer.set_key(key.clone());
+                value.serialize(&mut *self.ser)?;
+                Ok(())
+            } else {
+                (&mut self.current).set_key(key.clone());
+                to_writer(&mut self.current, value)
+            }
+        } else {
+            Err(Error {
+                message: String::from(
+                    "trying to deserialize something that is not a struct as a struct",
+                ),
+            })
+        }
     }
 
     fn end(self) -> Result<()> {
-        unimplemented!()
+        if !self.is_root {
+            self.ser.writer.insert_value(AttributeValue {
+                m: Some(self.current.root.clone()),
+                ..Default::default()
+            });
+        }
+        Ok(())
     }
 }
 
@@ -425,25 +652,6 @@ where
             });
         }
         Ok(())
-    }
-}
-
-impl<'a, W> serde::ser::SerializeStructVariant for Compound<'a, W>
-where
-    W: WriterTrait,
-{
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, _value: &T) -> Result<()>
-    where
-        T: serde::ser::Serialize,
-    {
-        unimplemented!()
-    }
-
-    fn end(self) -> Result<()> {
-        unimplemented!()
     }
 }
 
