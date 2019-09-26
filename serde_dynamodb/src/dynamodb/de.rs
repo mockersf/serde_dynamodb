@@ -32,7 +32,6 @@ macro_rules! impl_deserialize_n {
 #[derive(Debug)]
 enum Index {
     String(String),
-    Bytes(Vec<u8>),
     Number(usize),
     None,
 }
@@ -195,12 +194,7 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
     where
         V: serde::de::Visitor<'de>,
     {
-        if self.as_key {
-            match &self.current_field {
-                Index::Bytes(ref key) => visitor.visit_bytes(key),
-                _ => visitor.visit_bytes(b""),
-            }
-        } else if let Some(field) = self.read.get_attribute_value(&self.current_field) {
+        if let Some(field) = self.read.get_attribute_value(&self.current_field) {
             field
                 .clone()
                 .b
