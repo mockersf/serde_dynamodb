@@ -1,7 +1,5 @@
 use crate::error::{Error, Result};
 
-
-
 macro_rules! impl_serialize_to_string {
     ($type:ty, $method:ident) => {
         fn $method(self, value: $type) -> Result<()> {

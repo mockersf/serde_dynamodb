@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use rusoto_dynamodb::AttributeValue;
 use serde;
+use serde::de::IntoDeserializer;
 
 use crate::error::{Error, Result};
 
@@ -440,12 +441,54 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         self,
         _name: &str,
         _variants: &'static [&'static str],
-        _visitor: V,
+        visitor: V,
     ) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        let (variant, values) = if let Index::None = self.current_field {
+            let variant = self
+                .read
+                .get_attribute_value(&Index::String(String::from("___enum_tag")))
+                .ok_or_else(|| Error {
+                    message: "Missing enum tag field".to_owned(),
+                })?
+                .clone()
+                .s
+                .ok_or_else(|| Error {
+                    message: "Missing enum tag value".to_owned(),
+                })?;
+            let values = self
+                .read
+                .get_attribute_value(&Index::String(String::from("___enum_values")))
+                .and_then(|v| v.m.clone());
+            (variant, values)
+        } else {
+            let base = self
+                .read
+                .get_attribute_value(&self.current_field)
+                .ok_or_else(|| Error {
+                    message: format!("missing enum for field {:?}", &self.current_field),
+                })?
+                .m
+                .clone()
+                .ok_or_else(|| Error {
+                    message: "Missing".to_owned(),
+                })?;
+            eprintln!("got base: {:?}", base);
+            (
+                base.get("___enum_tag")
+                    .unwrap()
+                    .s
+                    .clone()
+                    .ok_or_else(|| Error {
+                        message: "Missing enum tag value".to_owned(),
+                    })?,
+                base.get("___enum_values").and_then(|v| v.m.clone()),
+            )
+        };
+        let mut des = Deserializer::new(HashMapRead::new(values.unwrap_or_else(HashMap::new)));
+        visitor.visit_enum(EnumAccess::new(&mut des, variant))
     }
 
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value>
@@ -465,6 +508,66 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         V: serde::de::Visitor<'de>,
     {
         visitor.visit_unit()
+    }
+}
+
+struct EnumAccess<'a, R: 'a> {
+    de: &'a mut Deserializer<R>,
+    variant_name: String,
+}
+impl<'a, R: 'a> EnumAccess<'a, R> {
+    fn new(de: &'a mut Deserializer<R>, variant_name: String) -> Self {
+        EnumAccess { de, variant_name }
+    }
+}
+impl<'de, 'a, R: Read + 'a> serde::de::EnumAccess<'de> for EnumAccess<'a, R> {
+    type Error = Error;
+    type Variant = VariantAccess<'a, R>;
+
+    fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant)>
+    where
+        V: serde::de::DeserializeSeed<'de>,
+    {
+        let value = seed.deserialize(self.variant_name.into_deserializer())?;
+        Ok((value, VariantAccess::new(self.de)))
+    }
+}
+
+struct VariantAccess<'a, R: 'a> {
+    de: &'a mut Deserializer<R>,
+}
+impl<'a, R: 'a> VariantAccess<'a, R> {
+    fn new(de: &'a mut Deserializer<R>) -> Self {
+        VariantAccess { de }
+    }
+}
+impl<'de, 'a, R: Read + 'a> serde::de::VariantAccess<'de> for VariantAccess<'a, R> {
+    type Error = Error;
+
+    fn unit_variant(self) -> Result<()> {
+        Ok(())
+    }
+
+    fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value>
+    where
+        T: serde::de::DeserializeSeed<'de>,
+    {
+        self.de.current_field = Index::String(String::from("_0"));
+        seed.deserialize(&mut *self.de)
+    }
+
+    fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        visitor.visit_seq(TupleAccess::new(self.de))
+    }
+
+    fn struct_variant<V>(self, _fields: &'static [&'static str], visitor: V) -> Result<V::Value>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        visitor.visit_map(MapAccess::new(self.de, self.de.read.get_keys()))
     }
 }
 

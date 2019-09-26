@@ -76,6 +76,13 @@ fn can_deserialize_struct() {
 
 #[test]
 fn can_go_back_and_forth() {
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    enum MyEnum {
+        Unit,
+        Newtype(i32),
+        Tuple(i32, bool),
+        Struct { f: i32 },
+    }
     #[derive(Deserialize, Serialize, Debug, PartialEq)]
     struct Internal {
         k: i32,
@@ -92,6 +99,10 @@ fn can_go_back_and_forth() {
         b: u8,
         u: u32,
         c: char,
+        e1: MyEnum,
+        e2: MyEnum,
+        e3: MyEnum,
+        e4: MyEnum,
         intern: Internal,
         list: Vec<i32>,
         some: Option<Internal>,
@@ -108,6 +119,10 @@ fn can_go_back_and_forth() {
         b: 13,
         u: 312,
         c: 0 as char,
+        e1: MyEnum::Unit,
+        e2: MyEnum::Newtype(5),
+        e3: MyEnum::Tuple(12, false),
+        e4: MyEnum::Struct { f: 27 },
         intern: Internal { k: 512, f: 13.54 },
         list: vec![0, 2, 5],
         some: Some(Internal { k: 120, f: 144.304 }),
@@ -349,4 +364,60 @@ fn can_serialize_hashmap() {
     value.insert("b".to_string(), "haha".to_string());
 
     test_with!(WithHashmap, WithHashmap { hm: value });
+}
+
+#[test]
+fn can_serialize_enum() {
+    #[derive(Serialize, Deserialize, Debug)]
+    enum MyEnum {
+        Unit,
+        Newtype(i32),
+        Tuple(i32, bool),
+        Struct { f: i32 },
+    }
+
+    test_with!(MyEnum, MyEnum::Unit);
+    test_with!(MyEnum, MyEnum::Newtype(5));
+    test_with!(MyEnum, MyEnum::Tuple(5, false));
+    test_with!(MyEnum, MyEnum::Struct { f: 7 });
+}
+
+#[test]
+fn can_serialize_enum_in_struct() {
+    #[derive(Serialize, Deserialize, Debug)]
+    enum MyEnum {
+        Unit,
+        Newtype(i32),
+        Tuple(i32, bool),
+        Struct { f: i32 },
+    }
+    #[derive(Serialize, Deserialize, Debug)]
+    struct WithEnum {
+        my_enum: MyEnum,
+    }
+
+    test_with!(
+        WithEnum,
+        WithEnum {
+            my_enum: MyEnum::Unit
+        }
+    );
+    test_with!(
+        WithEnum,
+        WithEnum {
+            my_enum: MyEnum::Newtype(5)
+        }
+    );
+    test_with!(
+        WithEnum,
+        WithEnum {
+            my_enum: MyEnum::Tuple(5, false)
+        }
+    );
+    test_with!(
+        WithEnum,
+        WithEnum {
+            my_enum: MyEnum::Struct { f: 7 }
+        }
+    );
 }
