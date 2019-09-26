@@ -201,7 +201,7 @@ where
         _name: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleStruct> {
-        unimplemented!()
+        Ok(Compound::new(self))
     }
 
     fn serialize_tuple_variant(
@@ -342,15 +342,30 @@ where
     type Ok = ();
     type Error = Error;
 
-    fn serialize_field<T: ?Sized>(&mut self, _value: &T) -> Result<()>
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()>
     where
         T: serde::ser::Serialize,
     {
-        unimplemented!()
+        let key = format!("_{}", self.item);
+        self.item += 1;
+        if self.is_root {
+            self.ser.writer.set_key(key);
+            value.serialize(&mut *self.ser)?;
+            Ok(())
+        } else {
+            (&mut self.current).set_key(key);
+            to_writer(&mut self.current, value)
+        }
     }
 
     fn end(self) -> Result<()> {
-        unimplemented!()
+        if !self.is_root {
+            self.ser.writer.insert_value(AttributeValue {
+                m: Some(self.current.root.clone()),
+                ..Default::default()
+            });
+        }
+        Ok(())
     }
 }
 

@@ -353,3 +353,16 @@ fn can_serialize_tuple_in_struct() {
         serde_dynamodb::from_hashmap(hm);
     assert!(with_tuple_result.is_ok());
 }
+
+#[test]
+fn can_serialize_tuple_struct() {
+    #[derive(Serialize, Deserialize, Debug)]
+    struct Point(i32, i32, bool);
+
+    let point = Point(1, 2, false);
+
+    let hm = serde_dynamodb::to_hashmap(&point).unwrap();
+    let with_tuple_struct: std::result::Result<Point, serde_dynamodb::Error> =
+        serde_dynamodb::from_hashmap(hm);
+    assert!(with_tuple_struct.is_ok());
+}

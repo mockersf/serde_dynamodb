@@ -357,12 +357,32 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         self,
         _name: &'static str,
         _len: usize,
-        _visitor: V,
+        visitor: V,
     ) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        match self.current_field {
+            Index::None => {
+                let mut des = Deserializer::new(self.read.clone());
+                visitor.visit_seq(TupleAccess::new(&mut des))
+            }
+            _ => {
+                let subread = HashMapRead {
+                    hashmap: self
+                        .read
+                        .get_attribute_value(&self.current_field)
+                        .ok_or_else(|| Error {
+                            message: format!("missing hashmap for field {:?}", &self.current_field),
+                        })?
+                        .m
+                        .clone()
+                        .unwrap(),
+                };
+                let mut des = Deserializer::new(subread);
+                visitor.visit_seq(TupleAccess::new(&mut des))
+            }
+        }
     }
 
     fn deserialize_map<V>(self, _visitor: V) -> Result<V::Value>
