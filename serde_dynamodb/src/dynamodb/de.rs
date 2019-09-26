@@ -385,11 +385,27 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         }
     }
 
-    fn deserialize_map<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        match self.current_field {
+            Index::None => visitor.visit_map(MapAccess::new(self, self.read.get_keys())),
+            _ => {
+                let map = self
+                    .read
+                    .get_attribute_value(&self.current_field)
+                    .ok_or_else(|| Error {
+                        message: format!("missing struct for field {:?}", &self.current_field),
+                    })?;
+                let hm = map.clone().m.ok_or_else(|| Error {
+                    message: "Missing".to_owned(),
+                })?;
+                let keys = hm.keys().cloned().collect();
+                let mut des = Deserializer::new(HashMapRead::new(hm));
+                visitor.visit_map(MapAccess::new(&mut des, keys))
+            }
+        }
     }
 
     fn deserialize_struct<V>(

@@ -193,6 +193,8 @@ pub mod error;
 
 pub use error::Error;
 
+mod common;
+
 #[cfg(feature = "rusoto_dynamodb")]
 mod dynamodb;
 #[cfg(feature = "rusoto_dynamodb")]

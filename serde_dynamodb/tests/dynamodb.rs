@@ -366,3 +366,22 @@ fn can_serialize_tuple_struct() {
         serde_dynamodb::from_hashmap(hm);
     assert!(with_tuple_struct.is_ok());
 }
+
+#[test]
+fn can_serialize_hashmap() {
+    #[derive(Serialize, Deserialize, Debug)]
+    struct WithHashmap {
+        hm: HashMap<String, String>,
+    };
+
+    let mut value = HashMap::new();
+    value.insert("a".to_string(), "hoho".to_string());
+    value.insert("b".to_string(), "haha".to_string());
+
+    let with_hashmap = WithHashmap { hm: value };
+
+    let hm = serde_dynamodb::to_hashmap(&with_hashmap).unwrap();
+    let with_hashmap_de: std::result::Result<WithHashmap, serde_dynamodb::Error> =
+        serde_dynamodb::from_hashmap(dbg!(hm));
+    assert!(with_hashmap_de.is_ok());
+}

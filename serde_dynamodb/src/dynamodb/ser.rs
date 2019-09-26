@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use rusoto_dynamodb::AttributeValue;
 use serde;
 
+use crate::common::SimpleKeySerializer;
 use crate::error::{Error, Result};
 
 macro_rules! impl_serialize_n {
@@ -215,7 +216,7 @@ where
     }
 
     fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap> {
-        unimplemented!()
+        Ok(Compound::new(self))
     }
 
     fn serialize_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeStruct> {
@@ -274,11 +275,18 @@ where
 }
 
 #[derive(Debug)]
+enum Key {
+    Index(usize),
+    Key(String),
+    None,
+}
+
+#[derive(Debug)]
 struct Compound<'a, W: 'a> {
     ser: &'a mut Serializer<W>,
     is_root: bool,
     current: HashMapWriter,
-    item: u8,
+    current_item: Key,
 }
 
 impl<'a, W> Compound<'a, W>
@@ -295,7 +303,7 @@ where
             ser,
             is_root,
             current: writer,
-            item: 0,
+            current_item: Key::None,
         }
     }
 }
@@ -311,15 +319,26 @@ where
     where
         T: serde::ser::Serialize,
     {
-        let key = format!("_{}", self.item);
-        self.item += 1;
-        if self.is_root {
-            self.ser.writer.set_key(key);
-            value.serialize(&mut *self.ser)?;
-            Ok(())
+        if let Key::None = self.current_item {
+            self.current_item = Key::Index(0);
+        }
+        if let Key::Index(idx) = self.current_item {
+            let key = format!("_{}", idx);
+            self.current_item = Key::Index(idx + 1);
+            if self.is_root {
+                self.ser.writer.set_key(key);
+                value.serialize(&mut *self.ser)?;
+                Ok(())
+            } else {
+                (&mut self.current).set_key(key);
+                to_writer(&mut self.current, value)
+            }
         } else {
-            (&mut self.current).set_key(key);
-            to_writer(&mut self.current, value)
+            Err(Error {
+                message: String::from(
+                    "trying to deserialize something that is not a tuple as a tuple",
+                ),
+            })
         }
     }
 
@@ -346,15 +365,26 @@ where
     where
         T: serde::ser::Serialize,
     {
-        let key = format!("_{}", self.item);
-        self.item += 1;
-        if self.is_root {
-            self.ser.writer.set_key(key);
-            value.serialize(&mut *self.ser)?;
-            Ok(())
+        if let Key::None = self.current_item {
+            self.current_item = Key::Index(0);
+        }
+        if let Key::Index(idx) = self.current_item {
+            let key = format!("_{}", idx);
+            self.current_item = Key::Index(idx + 1);
+            if self.is_root {
+                self.ser.writer.set_key(key);
+                value.serialize(&mut *self.ser)?;
+                Ok(())
+            } else {
+                (&mut self.current).set_key(key);
+                to_writer(&mut self.current, value)
+            }
         } else {
-            (&mut self.current).set_key(key);
-            to_writer(&mut self.current, value)
+            Err(Error {
+                message: String::from(
+                    "trying to deserialize something that is not a tuple as a tuple",
+                ),
+            })
         }
     }
 
@@ -395,22 +425,47 @@ where
     type Ok = ();
     type Error = Error;
 
-    fn serialize_key<T: ?Sized>(&mut self, _key: &T) -> Result<()>
+    fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<()>
     where
         T: serde::ser::Serialize,
     {
-        unimplemented!()
+        let _ = key;
+        let mut serializer = SimpleKeySerializer::new();
+        key.serialize(&mut serializer)?;
+        self.current_item = Key::Key(serializer.get_result());
+        Ok(())
     }
 
-    fn serialize_value<T: ?Sized>(&mut self, _value: &T) -> Result<()>
+    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<()>
     where
         T: serde::ser::Serialize,
     {
-        unimplemented!()
+        if let Key::Key(key) = &self.current_item {
+            if self.is_root {
+                self.ser.writer.set_key(key.clone());
+                value.serialize(&mut *self.ser)?;
+                Ok(())
+            } else {
+                (&mut self.current).set_key(key.clone());
+                to_writer(&mut self.current, value)
+            }
+        } else {
+            Err(Error {
+                message: String::from(
+                    "trying to deserialize something that is not a struct as a struct",
+                ),
+            })
+        }
     }
 
     fn end(self) -> Result<()> {
-        unimplemented!()
+        if !self.is_root {
+            self.ser.writer.insert_value(AttributeValue {
+                m: Some(self.current.root.clone()),
+                ..Default::default()
+            });
+        }
+        Ok(())
     }
 }
 
