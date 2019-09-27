@@ -15,7 +15,8 @@ macro_rules! test_with {
         let serialized = serde_dynamodb::streams::to_hashmap(&original).unwrap();
         let deserialized: std::result::Result<$type, serde_dynamodb::Error> =
             serde_dynamodb::streams::from_hashmap(dbg!(serialized));
-        assert!(dbg!(deserialized).is_ok());
+        assert!(dbg!(&deserialized).is_ok());
+        assert_eq!(original, deserialized.unwrap());
     };
 }
 
@@ -313,7 +314,7 @@ fn can_be_missing_with_default() {
 
 #[test]
 fn can_serialize_bytes() {
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
     struct WithBytes {
         b: Vec<u8>,
     }
@@ -328,12 +329,12 @@ fn can_serialize_bytes() {
 
 #[test]
 fn can_serialize_tuple() {
-    test_with!((u32, String), (1, "a"));
+    test_with!((u32, String), (1, String::from("a")));
 }
 
 #[test]
 fn can_serialize_tuple_in_struct() {
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
     struct WithTuple {
         t: (u32, String),
     }
@@ -348,7 +349,7 @@ fn can_serialize_tuple_in_struct() {
 
 #[test]
 fn can_serialize_tuple_struct() {
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
     struct Point(i32, i32, bool);
 
     test_with!(Point, Point(1, 2, false));
@@ -356,7 +357,7 @@ fn can_serialize_tuple_struct() {
 
 #[test]
 fn can_serialize_hashmap() {
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
     struct WithHashmap {
         hm: HashMap<String, String>,
     };
@@ -370,7 +371,7 @@ fn can_serialize_hashmap() {
 
 #[test]
 fn can_serialize_enum() {
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
     enum MyEnum {
         Unit,
         Newtype(i32),
@@ -386,14 +387,14 @@ fn can_serialize_enum() {
 
 #[test]
 fn can_serialize_enum_in_struct() {
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
     enum MyEnum {
         Unit,
         Newtype(i32),
         Tuple(i32, bool),
         Struct { f: i32 },
     }
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
     struct WithEnum {
         my_enum: MyEnum,
     }
