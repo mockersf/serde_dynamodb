@@ -117,17 +117,22 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
             .clone();
 
         if f.b.is_some() {
+            self.deserialize_bytes(visitor)
+        } else if f.bool.is_some() {
             self.deserialize_bool(visitor)
-        } else if f.l.is_some() || f.ns.is_some() || f.ss.is_some() {
+        } else if f.l.is_some() || f.ns.is_some() || f.ss.is_some() || f.bs.is_some() {
             self.deserialize_seq(visitor)
         } else if f.m.is_some() {
             self.deserialize_map(visitor)
         } else if f.n.is_some() {
             self.deserialize_f64(visitor)
+        } else if f.null.is_some() {
+            self.deserialize_unit(visitor)
         } else if f.s.is_some() {
             self.deserialize_str(visitor)
         } else {
-            unimplemented!()
+            // This part should be unreachable as all possibilities are tested before
+            unreachable!()
         }
     }
 
