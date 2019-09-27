@@ -230,11 +230,11 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
         }
     }
 
-    fn deserialize_byte_buf<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        unimplemented!()
+        self.deserialize_bytes(visitor)
     }
 
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
@@ -316,6 +316,16 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
                     .into_iter()
                     .map(|s| AttributeValue {
                         s: Some(s),
+                        ..Default::default()
+                    })
+                    .collect(),
+            }
+        } else if let Some(blist) = list.bs {
+            VecRead {
+                vec: blist
+                    .into_iter()
+                    .map(|s| AttributeValue {
+                        b: Some(s),
                         ..Default::default()
                     })
                     .collect(),
