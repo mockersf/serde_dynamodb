@@ -416,9 +416,7 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
                     .ok_or_else(|| Error {
                         message: format!("missing struct for field {:?}", &self.current_field),
                     })?;
-                let hm = map.clone().m.ok_or_else(|| Error {
-                    message: "Missing".to_owned(),
-                })?;
+                let hm = map.clone().m.unwrap_or_else(HashMap::new);
                 let keys = hm.keys().cloned().collect();
                 let mut des = Deserializer::new(HashMapRead::new(hm));
                 visitor.visit_map(MapAccess::new(&mut des, keys))
@@ -445,7 +443,7 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
                         message: format!("missing struct for field {:?}", &self.current_field),
                     })?;
                 let hm = map.clone().m.ok_or_else(|| Error {
-                    message: "Missing".to_owned(),
+                    message: "Missing struct fields".to_owned(),
                 })?;
                 let keys = hm.keys().cloned().collect();
                 let mut des = Deserializer::new(HashMapRead::new(hm));
@@ -481,18 +479,18 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
                 .and_then(|v| v.m.clone());
             (variant, values)
         } else {
-            let base = self
+            let enum_field = self
                 .read
                 .get_attribute_value(&self.current_field)
                 .ok_or_else(|| Error {
                     message: format!("missing enum for field {:?}", &self.current_field),
-                })?
-                .m
-                .clone()
-                .ok_or_else(|| Error {
-                    message: "Missing".to_owned(),
                 })?;
-            eprintln!("got base: {:?}", base);
+            if let Some(shortstyle) = enum_field.s.clone() {
+                return visitor.visit_enum(shortstyle.into_deserializer());
+            }
+            let base = enum_field.m.clone().ok_or_else(|| Error {
+                message: "Missing enum data".to_owned(),
+            })?;
             (
                 base.get("___enum_tag")
                     .unwrap()

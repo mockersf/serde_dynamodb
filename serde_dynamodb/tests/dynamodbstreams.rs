@@ -424,3 +424,37 @@ fn can_serialize_enum_in_struct() {
         }
     );
 }
+
+#[test]
+fn can_serialize_shortstyle_enum_in_struct() {
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    enum MyEnum {
+        Unit,
+        Newtype(i32),
+        Tuple(i32, bool),
+        Struct { f: i32 },
+    }
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    struct WithEnum {
+        my_enum: MyEnum,
+    }
+
+    let mut value: HashMap<String, AttributeValue> = HashMap::new();
+    value.insert(
+        "my_enum".to_string(),
+        AttributeValue {
+            s: Some(String::from("Unit")),
+            ..Default::default()
+        },
+    );
+
+    let deserialized: std::result::Result<WithEnum, serde_dynamodb::Error> =
+        serde_dynamodb::streams::from_hashmap(value);
+    assert!(dbg!(&deserialized).is_ok());
+    assert_eq!(
+        WithEnum {
+            my_enum: MyEnum::Unit
+        },
+        deserialized.unwrap()
+    );
+}
