@@ -12,4 +12,4 @@ serde_dynamodb_derive = { path = "../serde_dynamodb_derive" }
 rusoto_core = "0.41"
 rusoto_dynamodb = "0.41"
 
-uuid = { version = "0.7", features = ["serde", "v4"] }
+uuid = { version = "0.8", features = ["serde", "v4"] }
