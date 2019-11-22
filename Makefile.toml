@@ -1,0 +1,10 @@
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = "true"
+
+[tasks.check-rusoto-versions]
+ignore_errors = true
+script = [
+    "pwd", 
+    "find . -name Cargo.toml | xargs -I % grep 'rusoto.* = \"' %"
+]
+
