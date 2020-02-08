@@ -124,7 +124,7 @@ where
     fn serialize_bytes(self, value: &[u8]) -> Result<()> {
         if !value.is_empty() {
             self.writer.insert_value(AttributeValue {
-                b: Some(value.into()),
+                b: Some(bytes::Bytes::copy_from_slice(value)),
                 ..Default::default()
             });
         }
