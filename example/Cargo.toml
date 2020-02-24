@@ -2,6 +2,7 @@
 name = "example"
 version = "0.1.0"
 authors = ["François Mockers <mockersf@gmail.com>"]
+edition = "2018"
 
 [dependencies]
 serde = "*"
@@ -9,7 +10,9 @@ serde_derive = "*"
 serde_dynamodb = { path = "../serde_dynamodb" }
 serde_dynamodb_derive = { path = "../serde_dynamodb_derive" }
 
-rusoto_core = "0.42"
-rusoto_dynamodb = "0.42"
+rusoto_core = "0.43.0-beta.1"
+rusoto_dynamodb = "0.43.0-beta.1"
 
 uuid = { version = "0.8", features = ["serde", "v4"] }
+
+futures = "0.3"

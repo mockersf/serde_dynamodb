@@ -1,21 +1,14 @@
 #![allow(clippy::redundant_closure)]
 
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_dynamodb;
-#[macro_use]
-extern crate serde_dynamodb_derive;
+use futures::executor::block_on;
 
-extern crate rusoto_core;
-extern crate rusoto_dynamodb;
-
-extern crate uuid;
+use serde::{Deserialize, Serialize};
 
 use rusoto_core::Region;
 use rusoto_dynamodb::{DynamoDb, DynamoDbClient, PutItemInput, QueryInput};
 
 use serde_dynamodb::ToQueryInput;
+use serde_dynamodb_derive::ToQueryInput;
 
 #[derive(Serialize, Deserialize, ToQueryInput)]
 struct Task {
@@ -43,13 +36,12 @@ fn main() {
         ..Default::default()
     };
 
-    let _my_tasks: Vec<Task> = client
-        .query(task_query_input.to_query_input(String::from("tableName")))
-        .sync()
-        .unwrap()
-        .items
-        .unwrap_or_else(|| vec![])
-        .into_iter()
-        .map(|item| serde_dynamodb::from_hashmap(item).unwrap())
-        .collect();
+    let _my_tasks: Vec<Task> =
+        block_on(client.query(task_query_input.to_query_input(String::from("tableName"))))
+            .unwrap()
+            .items
+            .unwrap_or_else(|| vec![])
+            .into_iter()
+            .map(|item| serde_dynamodb::from_hashmap(item).unwrap())
+            .collect();
 }
