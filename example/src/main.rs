@@ -24,7 +24,8 @@ struct Task {
     status: Option<String>,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let client = DynamoDbClient::new(Region::UsEast1);
 
     let task = Task {
@@ -45,7 +46,7 @@ fn main() {
 
     let _my_tasks: Vec<Task> = client
         .query(task_query_input.to_query_input(String::from("tableName")))
-        .sync()
+        .await
         .unwrap()
         .items
         .unwrap_or_else(|| vec![])

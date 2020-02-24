@@ -1,6 +1,6 @@
 [package]
 name = "serde_dynamodb"
-version = "0.4.1"
+version = "0.4.3-beta.1"
 authors = ["François Mockers <mockersf@gmail.com>"]
 description = "de/serialize struct to HashMap<String, AttributeValue> with Serde to use with Rusoto DynamoDB"
 repository = "https://github.com/mockersf/serde_dynamodb"
@@ -16,13 +16,14 @@ travis-ci = { repository = "mockersf/serde_dynamodb" }
 
 [dependencies]
 serde = "1.0"
-rusoto_dynamodb = { version = "0.42", default-features = false, optional = true }
-rusoto_dynamodbstreams = { version = "0.42", optional = true }
+rusoto_dynamodb = { version = "0.43.0-beta.1", default-features = false, optional = true }
+rusoto_dynamodbstreams = { version = "0.43.0-beta.1", optional = true }
+bytes = "0.5"
 
 [dev-dependencies]
-serde = { version = "1.0", features = [ "derive" ] }
-rusoto_core = "0.42"
-rusoto_dynamodb = "0.42"
+serde = { version = "1.0.104", features = [ "derive" ] }
+rusoto_core = "0.43.0-beta.1"
+rusoto_dynamodb = "0.43.0-beta.1"
 
 [features]
 default = ["rusoto_dynamodb", "rusoto_dynamodb/default"]
