@@ -346,7 +346,7 @@ where
     fn end_wrapper(self) -> Result<()> {
         if let Some(wrapper) = self.wrapper_to_close {
             self.ser.writer.insert_value(AttributeValue {
-                m: Some(wrapper.root.clone()),
+                m: Some(wrapper.root),
                 ..Default::default()
             });
         }
@@ -396,7 +396,7 @@ where
             });
             if !self.is_root {
                 self.ser.writer.insert_value(AttributeValue {
-                    m: Some(wrapper.root.clone()),
+                    m: Some(wrapper.root),
                     ..Default::default()
                 });
             }
@@ -439,7 +439,7 @@ where
             });
             if !self.is_root {
                 self.ser.writer.insert_value(AttributeValue {
-                    m: Some(wrapper.root.clone()),
+                    m: Some(wrapper.root),
                     ..Default::default()
                 });
             }

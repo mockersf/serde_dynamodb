@@ -116,10 +116,6 @@
 //!
 //!     Ok(())
 //! }
-//! #
-//! # fn main() {
-//! #     typed_example().unwrap();
-//! # }
 //! ```
 //!
 //! # Creating an HashMap by serializing data structures
@@ -153,11 +149,6 @@
 //!
 //!     Ok(())
 //! }
-//! #
-//! # fn main() {
-//! #     #[cfg(feature = "rusoto_dynamodb")]
-//! #     print_an_address().unwrap();
-//! # }
 //! ```
 //!
 //! # Features

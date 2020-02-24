@@ -118,7 +118,7 @@ fn impl_build_query_input(
         .map(|field| {
             let field_name = format!("{}", field.ident.clone().unwrap());
 
-            let mut renamed = field_name.clone();
+            let mut renamed = field_name;
             for meta_items in field
                 .attrs
                 .iter()
