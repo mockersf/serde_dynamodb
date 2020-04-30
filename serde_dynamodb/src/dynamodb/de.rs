@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use rusoto_dynamodb::AttributeValue;
-use serde;
+
 use serde::de::IntoDeserializer;
 
 use crate::error::{Error, Result};
@@ -17,14 +17,18 @@ macro_rules! impl_deserialize_n {
             visitor.$visit(
                 self.read
                     .get_attribute_value(&self.current_field)
-                    .ok_or_else(|| Error { message: format!("missing integer for field {:?}",
-                                                            &self.current_field) })?
+                    .ok_or_else(|| Error {
+                        message: format!("missing integer for field {:?}", &self.current_field),
+                    })?
                     .clone()
                     .n
-                    .ok_or_else(|| Error { message: format!("missing integer for field {:?}",
-                                                            &self.current_field) })?
+                    .ok_or_else(|| Error {
+                        message: format!("missing integer for field {:?}", &self.current_field),
+                    })?
                     .parse::<$type>()
-                    .map_err(|_| Error { message: "Invalid type".to_owned() })?
+                    .map_err(|_| Error {
+                        message: "Invalid type".to_owned(),
+                    })?,
             )
         }
     };

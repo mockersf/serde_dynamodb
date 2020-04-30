@@ -209,9 +209,9 @@ fn can_create_struct_custom_serialization() {
             while let Some(ref key) = map.next_key::<String>()? {
                 let v = map.next_value::<String>()?;
                 if key == "x" {
-                    x = String::from(v)
+                    x = v
                 } else if key == "y" {
-                    y = String::from(v)
+                    y = v
                 } else {
                     panic!("Serialization failed!")
                 }
@@ -253,17 +253,17 @@ fn can_deserialize_hashset() {
         },
     );
 
-    let foo: Foo = serde_dynamodb::from_hashmap(value).unwrap();
+    let test_hashes: Foo = serde_dynamodb::from_hashmap(value).unwrap();
     let mut expected = HashSet::new();
     expected.insert("foo".to_owned());
     expected.insert("bar".to_owned());
-    assert_eq!(foo.bar, expected);
+    assert_eq!(test_hashes.bar, expected);
 
     let mut expected = HashSet::new();
     expected.insert(3);
     expected.insert(4);
     expected.insert(5);
-    assert_eq!(foo.baz, expected);
+    assert_eq!(test_hashes.baz, expected);
 }
 
 #[test]

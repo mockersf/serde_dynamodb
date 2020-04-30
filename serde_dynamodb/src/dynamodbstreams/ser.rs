@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use rusoto_dynamodbstreams::AttributeValue;
-use serde;
+
 
 use crate::common::SimpleKeySerializer;
 use crate::error::{Error, Result};
@@ -126,7 +126,7 @@ where
     fn serialize_bytes(self, value: &[u8]) -> Result<()> {
         if !value.is_empty() {
             self.writer.insert_value(AttributeValue {
-                b: Some(value.into()),
+                b: Some(bytes::Bytes::copy_from_slice(value)),
                 ..Default::default()
             });
         }
@@ -348,7 +348,7 @@ where
     fn end_wrapper(self) -> Result<()> {
         if let Some(wrapper) = self.wrapper_to_close {
             self.ser.writer.insert_value(AttributeValue {
-                m: Some(wrapper.root.clone()),
+                m: Some(wrapper.root),
                 ..Default::default()
             });
         }
@@ -398,7 +398,7 @@ where
             });
             if !self.is_root {
                 self.ser.writer.insert_value(AttributeValue {
-                    m: Some(wrapper.root.clone()),
+                    m: Some(wrapper.root),
                     ..Default::default()
                 });
             }
@@ -441,7 +441,7 @@ where
             });
             if !self.is_root {
                 self.ser.writer.insert_value(AttributeValue {
-                    m: Some(wrapper.root.clone()),
+                    m: Some(wrapper.root),
                     ..Default::default()
                 });
             }
