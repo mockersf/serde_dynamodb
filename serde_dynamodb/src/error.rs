@@ -1,8 +1,5 @@
 //! This type represents all possible errors that can occur when serializing or deserializing DynamoDB data.
 
-
-
-
 /// Alias for a Result with the error type `serde_dynamodb::Error`.
 pub type Result<T> = std::result::Result<T, Error>;
 

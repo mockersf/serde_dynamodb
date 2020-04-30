@@ -6,7 +6,6 @@ use std::collections::HashMap;
 
 use rusoto_dynamodbstreams::AttributeValue;
 
-
 use crate::common::SimpleKeySerializer;
 use crate::error::{Error, Result};
 
