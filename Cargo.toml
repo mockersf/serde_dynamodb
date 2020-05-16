@@ -1,7 +1,5 @@
 [workspace]
 members = [
     "serde_dynamodb",
-    "serde_dynamodb_derive",
-    "example",
 ]
 
