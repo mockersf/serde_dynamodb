@@ -17,7 +17,7 @@ travis-ci = { repository = "mockersf/serde_dynamodb" }
 [dependencies]
 serde = "1.0"
 rusoto_dynamodb = { version = "0.45.0", default-features = false, optional = true }
-rusoto_dynamodbstreams = { version = "0.44.0", optional = true }
+rusoto_dynamodbstreams = { version = "0.45.0", optional = true }
 bytes = "0.5"
 
 [dev-dependencies]
