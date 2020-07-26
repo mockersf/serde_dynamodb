@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Error","This type represents all possible errors that can occur when serializing to or deserializing from DynamoDB."]],"type":[["Result","Alias for a Result with the error type `serde_dynamodb::Error`."]]});

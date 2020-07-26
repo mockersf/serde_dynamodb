@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["from_hashmap","Deserialize an instance of type `T` from an `HashMap<String, AttributeValue>`."],["to_hashmap","Serialize the given data structure as an `HashMap<String, AttributeValue>`."]]});
