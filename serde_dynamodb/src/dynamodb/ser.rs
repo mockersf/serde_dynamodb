@@ -111,22 +111,18 @@ where
     }
 
     fn serialize_str(self, value: &str) -> Result<()> {
-        if !value.is_empty() {
-            self.writer.insert_value(AttributeValue {
-                s: Some(value.to_string()),
-                ..Default::default()
-            });
-        }
+        self.writer.insert_value(AttributeValue {
+            s: Some(value.to_string()),
+            ..Default::default()
+        });
         Ok(())
     }
 
     fn serialize_bytes(self, value: &[u8]) -> Result<()> {
-        if !value.is_empty() {
-            self.writer.insert_value(AttributeValue {
-                b: Some(bytes::Bytes::copy_from_slice(value)),
-                ..Default::default()
-            });
-        }
+        self.writer.insert_value(AttributeValue {
+            b: Some(bytes::Bytes::copy_from_slice(value)),
+            ..Default::default()
+        });
         Ok(())
     }
 
