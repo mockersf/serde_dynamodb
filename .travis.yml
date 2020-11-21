@@ -12,7 +12,7 @@ matrix:
   include:
     - rust: stable
       env: RUSTFMT
-      install:
+      before_script:
         - rustup component add rustfmt
       script:
         - cargo fmt -- --check
