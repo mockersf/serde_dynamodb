@@ -1,6 +1,6 @@
 [package]
 name = "serde_dynamodb"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["François Mockers <mockersf@gmail.com>"]
 description = "de/serialize struct to HashMap<String, AttributeValue> with Serde to use with Rusoto DynamoDB"
 repository = "https://github.com/mockersf/serde_dynamodb"
