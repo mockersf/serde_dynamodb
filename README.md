@@ -2,11 +2,6 @@
 
 Library to de/serialize an object to an `HashMap` of `AttributeValue`s used by [rusoto_dynamodb](https://crates.io/crates/rusoto_dynamodb) to manipulate objects saved in dynamodb using [serde](https://serde.rs)
 
-```toml
-[dependencies]
-serde_dynamodb = "0.2.1"
-```
-
 ## Example
 
 ```rust
