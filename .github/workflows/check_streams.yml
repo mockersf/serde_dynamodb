@@ -6,7 +6,7 @@ on:
 name: Check dynamodb streams implementation has been updated
 
 jobs:
-  ci:
+  check_streams:
     # macos because script use macos syntax for sed...
     runs-on: macos-latest
 
