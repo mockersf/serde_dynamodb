@@ -1,0 +1,20 @@
+on:
+  push:
+    branches:
+      - main
+
+name: Check dynamodb streams implementation has been updated
+
+jobs:
+  ci:
+    # macos because script use macos syntax for sed...
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Update dynamodb streams
+        run: ./update_streams.sh
+
+      - name: Check for changes
+        run: if [[ -z "$(git status --porcelain)" ]]; then exit 0; else exit 1; fi
