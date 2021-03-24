@@ -144,7 +144,8 @@ where
         _variant_index: u32,
         variant: &'static str,
     ) -> Result<()> {
-        EnumCompound::new(self, variant, false).end_wrapper()
+        EnumCompound::new(self, variant, false).end_wrapper();
+        Ok(())
     }
 
     fn serialize_newtype_struct<T: ?Sized>(self, _name: &'static str, value: &T) -> Result<()>
@@ -338,14 +339,13 @@ where
         }
     }
 
-    fn end_wrapper(self) -> Result<()> {
+    fn end_wrapper(self) {
         if let Some(wrapper) = self.wrapper_to_close {
             self.ser.writer.insert_value(AttributeValue {
                 m: Some(wrapper.root),
                 ..Default::default()
             });
         }
-        Ok(())
     }
 }
 impl<'a, W> serde::ser::SerializeTupleVariant for EnumCompound<'a, W>
