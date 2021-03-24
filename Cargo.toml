@@ -11,20 +11,23 @@ license = "MIT"
 readme = "README.md"
 edition = "2018"
 
-[badges]
-travis-ci = { repository = "mockersf/serde_dynamodb" }
-
 [dependencies]
 serde = "1.0"
 rusoto_dynamodb = { version = "0.46.0", default-features = false, optional = true }
-rusoto_dynamodbstreams = { version = "0.46.0", optional = true }
+rusoto_dynamodbstreams = { version = "0.46.0", default-features = false, optional = true }
 bytes = "1.0"
 
 [dev-dependencies]
 serde = { version = "1.0", features = [ "derive" ] }
-rusoto_core = "0.46.0"
-rusoto_dynamodb = "0.46.0"
+rusoto_core = { version = "0.46.0", default-features = false }
+rusoto_dynamodb = { version = "0.46.0", default-features = false }
 
 [features]
-default = ["rusoto_dynamodb", "rusoto_dynamodb/default"]
+default = ["rusoto_dynamodb", "rusoto_dynamodb/rustls"]
+
 rustls = ["rusoto_dynamodb", "rusoto_dynamodb/rustls"]
+native-tls = ["rusoto_dynamodb", "rusoto_dynamodb/native-tls"]
+
+streams = ["rusoto_dynamodbstreams", "rusoto_dynamodbstreams/rustls"]
+streams-rustls = ["rusoto_dynamodbstreams", "rusoto_dynamodbstreams/rustls"]
+streams-native-tls = ["rusoto_dynamodbstreams", "rusoto_dynamodbstreams/native-tls"]

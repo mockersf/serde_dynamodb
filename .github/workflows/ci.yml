@@ -29,11 +29,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
+          args: --features streams-rustls
 
       - name: Test
         uses: actions-rs/cargo@v1
         with:
           command: test
+          args: --features streams-rustls
 
       - name: Format
         uses: actions-rs/cargo@v1
@@ -45,4 +47,4 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: -- -D warnings
+          args: --features streams-rustls -- -D warnings
