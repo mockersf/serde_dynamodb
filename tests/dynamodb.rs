@@ -358,7 +358,7 @@ fn can_serialize_hashmap() {
     #[derive(Serialize, Deserialize, Debug, PartialEq)]
     struct WithHashmap {
         hm: HashMap<String, String>,
-    };
+    }
 
     let mut value = HashMap::new();
     value.insert("a".to_string(), "hoho".to_string());
