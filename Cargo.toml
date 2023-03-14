@@ -13,14 +13,14 @@ edition = "2018"
 
 [dependencies]
 serde = "1.0"
-rusoto_dynamodb = { version = "0.47.0", default-features = false, optional = true }
+rusoto_dynamodb = { version = "0.48.0", default-features = false, optional = true }
 rusoto_dynamodbstreams = { version = "0.47.0", default-features = false, optional = true }
 bytes = "1.0"
 
 [dev-dependencies]
 serde = { version = "1.0", features = [ "derive" ] }
 rusoto_core = { version = "0.47.0", default-features = false }
-rusoto_dynamodb = { version = "0.47.0", default-features = false }
+rusoto_dynamodb = { version = "0.48.0", default-features = false }
 
 [features]
 default = ["rusoto_dynamodb", "rusoto_dynamodb/rustls"]
