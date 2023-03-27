@@ -80,7 +80,7 @@ impl Read for VecRead {
         }
     }
     fn get_keys(&self) -> Vec<String> {
-        return vec![];
+        vec![]
     }
 }
 
@@ -90,7 +90,7 @@ struct Deserializer<R> {
     current_field: Index,
     as_key: bool,
 }
-impl<'de, R> Deserializer<R>
+impl<R> Deserializer<R>
 where
     R: Read,
 {

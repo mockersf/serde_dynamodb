@@ -266,7 +266,7 @@ where
 
     fn end(self) -> Result<()> {
         self.ser.writer.insert_value(AttributeValue {
-            l: Some(self.current.list.clone()),
+            l: Some(self.current.list),
             ..Default::default()
         });
         Ok(())
@@ -513,7 +513,7 @@ where
     fn end(self) -> Result<()> {
         if !self.is_root {
             self.ser.writer.insert_value(AttributeValue {
-                m: Some(self.current.root.clone()),
+                m: Some(self.current.root),
                 ..Default::default()
             });
         }
@@ -558,7 +558,7 @@ where
     fn end(self) -> Result<()> {
         if !self.is_root {
             self.ser.writer.insert_value(AttributeValue {
-                m: Some(self.current.root.clone()),
+                m: Some(self.current.root),
                 ..Default::default()
             });
         }
@@ -608,7 +608,7 @@ where
     fn end(self) -> Result<()> {
         if !self.is_root {
             self.ser.writer.insert_value(AttributeValue {
-                m: Some(self.current.root.clone()),
+                m: Some(self.current.root),
                 ..Default::default()
             });
         }
@@ -640,7 +640,7 @@ where
     fn end(self) -> Result<()> {
         if !self.is_root {
             self.ser.writer.insert_value(AttributeValue {
-                m: Some(self.current.root.clone()),
+                m: Some(self.current.root),
                 ..Default::default()
             });
         }

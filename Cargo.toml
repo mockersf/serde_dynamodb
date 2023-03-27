@@ -15,7 +15,7 @@ edition = "2018"
 serde = "1.0"
 rusoto_dynamodb = { version = "0.48.0", default-features = false, optional = true }
 rusoto_dynamodbstreams = { version = "0.48.0", default-features = false, optional = true }
-bytes = "1.1"
+bytes = "1.4"
 
 [dev-dependencies]
 serde = { version = "1.0", features = [ "derive" ] }
