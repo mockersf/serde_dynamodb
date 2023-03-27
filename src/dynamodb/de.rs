@@ -80,7 +80,7 @@ impl Read for VecRead {
         }
     }
     fn get_keys(&self) -> Vec<String> {
-        return vec![];
+        vec![]
     }
 }
 
@@ -90,7 +90,7 @@ struct Deserializer<R> {
     current_field: Index,
     as_key: bool,
 }
-impl<'de, R> Deserializer<R>
+impl<R> Deserializer<R>
 where
     R: Read,
 {
@@ -418,7 +418,7 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
                     .ok_or_else(|| Error {
                         message: format!("missing struct for field {:?}", &self.current_field),
                     })?;
-                let hm = map.clone().m.unwrap_or_else(HashMap::new);
+                let hm = map.clone().m.unwrap_or_default();
                 let keys = hm.keys().cloned().collect();
                 let mut des = Deserializer::new(HashMapRead::new(hm));
                 visitor.visit_map(MapAccess::new(&mut des, keys))
@@ -504,7 +504,7 @@ impl<'de, 'a, R: Read> serde::de::Deserializer<'de> for &'a mut Deserializer<R> 
                 base.get("___enum_values").and_then(|v| v.m.clone()),
             )
         };
-        let mut des = Deserializer::new(HashMapRead::new(values.unwrap_or_else(HashMap::new)));
+        let mut des = Deserializer::new(HashMapRead::new(values.unwrap_or_default()));
         visitor.visit_enum(EnumAccess::new(&mut des, variant))
     }
 
